@@ -17,14 +17,7 @@ export function useStatuses() {
         if (!res.ok) throw new Error("Ошибка сети");
         return res.json();
       })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setStatuses(data);
-        } else {
-          console.error("Ожидался массив, но пришло:", data);
-          setError("Неверный формат данных от API");
-        }
-      })
+      .then((data) => setStatuses(data.statuses)) // ✅ важно!
       .catch((err) => {
         console.error("Ошибка при загрузке статусов", err);
         setError(err.message);
