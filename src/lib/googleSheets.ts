@@ -1,34 +1,29 @@
-
-// lib/googleSheets.ts
 import { google } from "googleapis";
-import { readFileSync } from "fs";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
-const CREDENTIALS_PATH = "credentials.json";
-const SPREADSHEET_ID = "1brVhUcgvrVHTbZtmzk5n1JZ1cBUDWRNC0sry2tDTEjw";
-const RANGE = "Sheet1!A2:C";
 
-export async function getSheetData() {
-  const content = readFileSync(CREDENTIALS_PATH, "utf-8");
-  const credentials = JSON.parse(content);
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  },
+  projectId: process.env.GOOGLE_PROJECT_ID,
+  scopes: SCOPES,
+});
 
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: SCOPES,
-  });
+const sheets = google.sheets({ version: "v4", auth });
 
-  const sheets = google.sheets({ version: "v4", auth });
-
+export async function getStatuses() {
   const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: RANGE,
+    spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID,
+    range: "Sheet1!A2:C",
   });
 
   const rows = response.data.values || [];
 
-  return rows.map(([code, description, action]) => ({
+  return rows.map(([code, description, actions]) => ({
     code,
     description,
-    action,
+    actions,
   }));
-} // ← вот эта закрывающая скобка обязательно должна быть
+}
