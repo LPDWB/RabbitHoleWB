@@ -5,6 +5,11 @@ import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
 import { motion, AnimatePresence } from "framer-motion";
 
+const LoadingDots = dynamic(
+  () => import("@/components/ui/loading-dots").then((mod) => mod.LoadingDots),
+  { ssr: false }
+);
+
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
   { ssr: false }
@@ -61,26 +66,34 @@ export default function Home() {
         </div>
 
         <div className="w-full max-w-xl space-y-3">
-          {loading && <p>Загрузка статусов...</p>}
           {error && <p className="text-red-500">Ошибка: {error}</p>}
-          <AnimatePresence>
-            {filteredStatuses.map((status) => (
-              <motion.div
-                key={status.code}
-                {...cardMotion}
-                whileHover={{ scale: 1.03, boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}
-                className="bg-card border border-border p-4 rounded-xl shadow cursor-pointer transition-colors"
-              >
-                <div className="text-lg font-bold">{status.code}</div>
-                <div className="text-muted-foreground">{status.description}</div>
-                {status.action && (
-                  <div className="text-sm mt-1 text-muted-foreground">
-                    Действия: {status.action}
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {loading ? (
+            <div className="flex justify-center">
+              <LoadingDots />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {filteredStatuses.map((status) => (
+                <motion.div
+                  key={status.code}
+                  {...cardMotion}
+                  whileHover={{
+                    scale: 1.03,
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+                  }}
+                  className="bg-card border border-border p-4 rounded-xl shadow cursor-pointer transition-colors"
+                >
+                  <div className="text-lg font-bold">{status.code}</div>
+                  <div className="text-muted-foreground">{status.description}</div>
+                  {status.action && (
+                    <div className="text-sm mt-1 text-muted-foreground">
+                      Действия: {status.action}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
         </div>
       </div>
     </main>
