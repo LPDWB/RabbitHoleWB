@@ -3,10 +3,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
-<<<<<<< HEAD
 import { motion, AnimatePresence } from "framer-motion";
-=======
->>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
 
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
@@ -59,7 +56,6 @@ export default function Home() {
         <div className="w-full max-w-xl space-y-3">
           {loading && <p>Загрузка статусов...</p>}
           {error && <p className="text-red-500">Ошибка: {error}</p>}
-<<<<<<< HEAD
           <AnimatePresence>
             {filteredStatuses.map((status, idx) => (
               <motion.div
@@ -81,22 +77,6 @@ export default function Home() {
               </motion.div>
             ))}
           </AnimatePresence>
-=======
-          {filteredStatuses.map((status) => (
-            <div
-              key={status.code}
-              className="bg-card border border-border p-4 rounded-xl shadow"
-            >
-              <div className="text-lg font-bold">{status.code}</div>
-              <div className="text-muted-foreground">{status.description}</div>
-              {status.action && (
-                <div className="text-sm mt-1 text-muted-foreground">
-                  Действия: {status.action}
-                </div>
-              )}
-            </div>
-          ))}
->>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
         </div>
       </div>
     </main>
