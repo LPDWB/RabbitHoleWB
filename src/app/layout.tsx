@@ -18,7 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} transition-colors duration-300`}>
+      <body
+        className={`${inter.className} transition-colors duration-300 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-lg`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
