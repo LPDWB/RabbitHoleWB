@@ -28,7 +28,7 @@ export default function Home() {
           (status.action && status.action.toLowerCase().includes(q))
         );
       })
-    : [];
+    : statuses;
 
   return (
     <main className="relative min-h-screen overflow-y-auto bg-background text-foreground pb-20">

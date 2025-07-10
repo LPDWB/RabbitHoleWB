@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import { motion } from "framer-motion";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,15 +25,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            style={{ minHeight: "100vh" }}
-          >
-            {children}
-          </motion.div>
+          <div style={{ minHeight: "100vh" }}>{children}</div>
         </ThemeProvider>
       </body>
     </html>
