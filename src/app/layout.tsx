@@ -3,7 +3,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+<<<<<<< HEAD
 import { motion, AnimatePresence } from "framer-motion";
+=======
+>>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +29,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+<<<<<<< HEAD
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -35,6 +39,9 @@ export default function RootLayout({
           >
             {children}
           </motion.div>
+=======
+          {children}
+>>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
         </ThemeProvider>
       </body>
     </html>
