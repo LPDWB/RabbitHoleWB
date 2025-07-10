@@ -25,7 +25,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div style={{ minHeight: "100vh" }}>{children}</div>
+          {children}
         </ThemeProvider>
       </body>
     </html>
