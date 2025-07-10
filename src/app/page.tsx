@@ -46,7 +46,7 @@ export default function Home() {
   }, [filteredStatuses.length]);
 
   return (
-    <main className="relative min-h-screen overflow-y-auto bg-background text-foreground pb-20 transition-colors duration-300">
+    <main className="relative min-h-screen overflow-y-auto bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300">
       {/* Header */}
       <header className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-50">
         <div className="ml-4" />
@@ -56,23 +56,27 @@ export default function Home() {
       </header>
 
       <motion.div
-        className="absolute inset-0 flex items-center justify-center h-screen"
-        initial={{ y: 0 }}
-        animate={{ y: moveUp ? "-15vh" : "0vh" }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className={
+          `relative z-10 w-full max-w-xl mx-auto flex flex-col px-4 transition-all duration-300 ${
+            moveUp ? '' : 'h-screen justify-center items-center'
+          }`
+        }
+        initial={false}
+        animate={{ y: moveUp ? -80 : 0 }}
       >
-        <div className="w-full max-w-xl flex flex-col items-center px-4">
-          <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
-          <SearchBar query={query} setQuery={setQuery} />
-        </div>
+        <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
+        <SearchBar query={query} setQuery={setQuery} />
+        {loading && (
+          <div className="mt-2 flex justify-center">
+            <LoadingText />
+          </div>
+        )}
       </motion.div>
 
-      <div className="pt-[calc(15vh+4rem)] px-4 w-full flex justify-center">
+      <div className="mt-8 px-4 w-full flex justify-center">
         <div className="w-full max-w-xl space-y-3">
           {error && <p className="text-red-500">Ошибка: {error}</p>}
-          {loading ? (
-            <LoadingText />
-          ) : (
+          {!loading && (
             <AnimatePresence>
               {filteredStatuses.map((status) => (
                 <motion.div
@@ -82,7 +86,7 @@ export default function Home() {
                     scale: 1.03,
                     boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
                   }}
-                  className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 dark:border-white/10 shadow-inner rounded-xl p-4 cursor-pointer transition-colors duration-300"
+                  className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-md rounded-xl p-4 cursor-pointer transition-colors duration-300"
                 >
                   <div className="text-lg font-bold">{status.code}</div>
                   <div className="text-muted-foreground">{status.description}</div>
