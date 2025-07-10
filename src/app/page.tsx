@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
 import { motion, AnimatePresence } from "framer-motion";
-import SkeletonCard from "@/components/ui/skeleton-card";
+import LoadingText from "@/components/ui/loading-text";
 
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
@@ -64,7 +64,7 @@ export default function Home() {
         <div className="w-full max-w-xl space-y-3">
           {error && <p className="text-red-500">Ошибка: {error}</p>}
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            <LoadingText />
           ) : (
             <AnimatePresence>
               {filteredStatuses.map((status) => (
