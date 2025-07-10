@@ -19,6 +19,13 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const { statuses, loading, error } = useStatuses();
 
+  const cardMotion = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+    transition: { duration: 0.25, ease: "easeInOut" },
+  };
+
   const filteredStatuses = query.length
     ? statuses.filter((status) => {
         const q = query.toLowerCase();
@@ -60,10 +67,7 @@ export default function Home() {
             {filteredStatuses.map((status) => (
               <motion.div
                 key={status.code}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                {...cardMotion}
                 whileHover={{ scale: 1.03, boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}
                 className="bg-card border border-border p-4 rounded-xl shadow cursor-pointer transition-colors"
               >
