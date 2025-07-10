@@ -56,17 +56,18 @@ export default function Home() {
       </header>
 
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center w-full max-w-xl px-4"
-        initial={false}
-        animate={{ top: moveUp ? "10vh" : "50vh" }}
-        transition={{ type: "spring", stiffness: 100 }}
-        style={{ translateY: "-50%" }}
+        className="absolute inset-0 flex items-center justify-center h-screen"
+        initial={{ y: 0 }}
+        animate={{ y: moveUp ? "-15vh" : "0vh" }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
-        <SearchBar query={query} setQuery={setQuery} />
+        <div className="w-full max-w-xl flex flex-col items-center px-4">
+          <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
+          <SearchBar query={query} setQuery={setQuery} />
+        </div>
       </motion.div>
 
-      <div className="pt-[calc(10vh+4rem)] px-4 w-full flex justify-center">
+      <div className="pt-[calc(15vh+4rem)] px-4 w-full flex justify-center">
         <div className="w-full max-w-xl space-y-3">
           {error && <p className="text-red-500">Ошибка: {error}</p>}
           {loading ? (
@@ -81,7 +82,7 @@ export default function Home() {
                     scale: 1.03,
                     boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
                   }}
-                  className="backdrop-blur-md bg-white/30 dark:bg-neutral-800/30 border border-white/20 dark:border-neutral-700/20 rounded-xl p-4 shadow cursor-pointer transition-colors duration-300"
+                  className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 dark:border-white/10 shadow-inner rounded-xl p-4 cursor-pointer transition-colors duration-300"
                 >
                   <div className="text-lg font-bold">{status.code}</div>
                   <div className="text-muted-foreground">{status.description}</div>

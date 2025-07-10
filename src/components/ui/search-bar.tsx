@@ -44,7 +44,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, onPositio
       placeholder="Поиск статуса..."
       value={inputValue}
       onChange={(e) => setInputValue(e.target.value)}
-      className="px-4 py-3 text-lg backdrop-blur-md bg-white/30 dark:bg-neutral-800/30 border border-white/20 dark:border-neutral-700/20 rounded-xl text-foreground shadow focus:outline-none transition-transform transition-colors duration-200 hover:scale-105 focus:scale-105 focus:ring-1 focus:ring-accent"
+      className="px-4 py-3 text-lg bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 dark:border-white/10 shadow-inner rounded-xl text-foreground focus:outline-none transition-transform transition-colors duration-200 hover:scale-105 focus:scale-105 focus:ring-1 focus:ring-accent"
     />
   );
 };
