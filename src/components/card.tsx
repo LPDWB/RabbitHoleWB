@@ -34,7 +34,7 @@ export const Card: React.FC<CardProps> = ({ card, isActive, onClick }) => {
       {...listeners}
       onClick={onClick}
       className={cn(
-        "absolute w-[300px] h-[300px] bg-background rounded-2xl overflow-hidden shadow-lg cursor-pointer transform transition-transform duration-200 ease-out",
+        "absolute w-[300px] h-[300px] bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 dark:border-white/10 shadow-inner rounded-xl overflow-hidden cursor-pointer transform transition-transform duration-200 ease-out",
         isActive && "scale-105 ring-2 ring-primary"
       )}
       initial={{ opacity: 0, scale: 0.8 }}
