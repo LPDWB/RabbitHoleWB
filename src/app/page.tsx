@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +21,6 @@ const PAGE_TITLE = "Warehouse Statuses";
 export default function Home() {
   const [query, setQuery] = useState("");
   const { statuses, loading, error } = useStatuses();
-  const [moveUp, setMoveUp] = useState(false);
 
   const cardMotion = {
     initial: { opacity: 0, y: 8 },
@@ -41,10 +40,6 @@ export default function Home() {
       })
     : [];
 
-  useEffect(() => {
-    setMoveUp(filteredStatuses.length > 0);
-  }, [filteredStatuses.length]);
-
   return (
     <main className="relative min-h-screen overflow-y-auto bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300">
       {/* Header */}
@@ -56,13 +51,10 @@ export default function Home() {
       </header>
 
       <motion.div
-        className={
-          `relative z-10 w-full max-w-xl mx-auto flex flex-col px-4 transition-all duration-300 ${
-            moveUp ? '' : 'h-screen justify-center items-center'
-          }`
-        }
-        initial={false}
-        animate={{ y: moveUp ? -80 : 0 }}
+        className="fixed left-1/2 top-1/2 z-10 flex w-full max-w-xl -translate-x-1/2 flex-col items-center px-4"
+        initial={{ y: 0 }}
+        animate={{ y: -60 }}
+        transition={{ ease: 'easeOut', duration: 0.3 }}
       >
         <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
         <SearchBar query={query} setQuery={setQuery} />
@@ -73,7 +65,7 @@ export default function Home() {
         )}
       </motion.div>
 
-      <div className="mt-8 px-4 w-full flex justify-center">
+      <div className="mt-[calc(50vh+60px)] px-4 w-full flex justify-center">
         <div className="w-full max-w-xl space-y-3">
           {error && <p className="text-red-500">Ошибка: {error}</p>}
           {!loading && (
