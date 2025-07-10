@@ -57,13 +57,13 @@ export default function Home() {
           {loading && <p>Загрузка статусов...</p>}
           {error && <p className="text-red-500">Ошибка: {error}</p>}
           <AnimatePresence>
-            {filteredStatuses.map((status, idx) => (
+            {filteredStatuses.map((status) => (
               <motion.div
                 key={status.code}
-                initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 24, scale: 0.97 }}
-                transition={{ duration: 0.3, delay: idx * 0.07 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
                 whileHover={{ scale: 1.03, boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}
                 className="bg-card border border-border p-4 rounded-xl shadow cursor-pointer transition-colors"
               >
