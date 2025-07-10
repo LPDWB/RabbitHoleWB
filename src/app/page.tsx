@@ -3,10 +3,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
-<<<<<<< HEAD
 import { motion, AnimatePresence } from "framer-motion";
-=======
->>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
 
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
@@ -59,17 +56,15 @@ export default function Home() {
         <div className="w-full max-w-xl space-y-3">
           {loading && <p>Загрузка статусов...</p>}
           {error && <p className="text-red-500">Ошибка: {error}</p>}
-<<<<<<< HEAD
           <AnimatePresence>
-            {filteredStatuses.map((status, idx) => (
+            {filteredStatuses.map((status) => (
               <motion.div
                 key={status.code}
-                initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 24, scale: 0.97 }}
-                transition={{ duration: 0.3, delay: idx * 0.07 }}
-                whileHover={{ scale: 1.03, boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}
-                className="bg-card border border-border p-4 rounded-xl shadow cursor-pointer transition-colors"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="bg-card border border-border p-4 rounded-xl shadow"
               >
                 <div className="text-lg font-bold">{status.code}</div>
                 <div className="text-muted-foreground">{status.description}</div>
@@ -81,22 +76,6 @@ export default function Home() {
               </motion.div>
             ))}
           </AnimatePresence>
-=======
-          {filteredStatuses.map((status) => (
-            <div
-              key={status.code}
-              className="bg-card border border-border p-4 rounded-xl shadow"
-            >
-              <div className="text-lg font-bold">{status.code}</div>
-              <div className="text-muted-foreground">{status.description}</div>
-              {status.action && (
-                <div className="text-sm mt-1 text-muted-foreground">
-                  Действия: {status.action}
-                </div>
-              )}
-            </div>
-          ))}
->>>>>>> e3cf2158384b7b8bebe36de508f63a50a69c3330
         </div>
       </div>
     </main>
