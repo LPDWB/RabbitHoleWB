@@ -12,6 +12,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, onPositio
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState(query);
   const [debouncedValue, setDebouncedValue] = useState(query);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Report input position if needed
   useEffect(() => {
@@ -43,8 +44,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, onPositio
       type="text"
       placeholder="Поиск статуса..."
       value={inputValue}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
       onChange={(e) => setInputValue(e.target.value)}
-      className="px-4 py-3 text-lg rounded-xl border border-muted bg-background text-foreground shadow focus:outline-none transform transition-transform duration-200 hover:scale-105 focus:scale-105 hover:ring-1 hover:ring-accent focus:ring-1 focus:ring-accent"
+      className={`px-4 py-3 text-lg rounded-xl border border-muted bg-background text-foreground shadow focus:outline-none transition-all duration-300 ${isFocused ? "ring-2 ring-accent" : ""}`}
+      style={{ width: isFocused ? "calc(100% + 20px)" : "100%" }}
     />
   );
 };

@@ -5,10 +5,8 @@ import dynamic from "next/dynamic";
 import { useStatuses } from "@/hooks/useStatuses";
 import { motion, AnimatePresence } from "framer-motion";
 
-const LoadingDots = dynamic(
-  () => import("@/components/ui/loading-dots").then((mod) => mod.LoadingDots),
-  { ssr: false }
-);
+
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
@@ -68,9 +66,11 @@ export default function Home() {
         <div className="w-full max-w-xl space-y-3">
           {error && <p className="text-red-500">Ошибка: {error}</p>}
           {loading ? (
-            <div className="flex justify-center">
-              <LoadingDots />
-            </div>
+            <>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </>
           ) : (
             <AnimatePresence>
               {filteredStatuses.map((status) => (
