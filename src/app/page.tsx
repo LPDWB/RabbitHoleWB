@@ -23,10 +23,10 @@ export default function Home() {
   const { statuses, loading, error } = useStatuses();
 
   const cardMotion = {
-    initial: { opacity: 0, y: 8 },
+    initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -8 },
-    transition: { duration: 0.25, ease: "easeInOut" },
+    exit: { opacity: 0, y: 20 },
+    transition: { duration: 0.3, ease: "easeInOut" },
   };
 
   const filteredStatuses = query.length
@@ -52,10 +52,8 @@ export default function Home() {
         </div>
       </header>
 
-      <h1 className="absolute top-6 left-6 text-xl font-semibold text-white/70 hover:text-white transition-colors">
-        WMS Stats
-      </h1>
-      <SearchBar query={query} setQuery={setQuery} hasResults={hasResults} />
+      <div className="fixed top-4 left-4 text-white font-semibold text-lg">WMS Stats</div>
+      <SearchBar query={query} setQuery={setQuery} />
       {loading && (
         <div className="-mt-2 flex justify-center">
           <LoadingText />
@@ -63,7 +61,7 @@ export default function Home() {
       )}
 
       <motion.div
-        className="max-h-[60vh] overflow-y-auto mt-6 w-full max-w-[800px] space-y-4 px-4"
+        className="max-h-[70vh] overflow-y-auto mt-6 w-full max-w-[800px] space-y-4 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -75,11 +73,8 @@ export default function Home() {
               <motion.div
                 key={status.code}
                 {...cardMotion}
-                whileHover={{
-                  scale: 1.03,
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-                }}
-                className="rounded-xl border border-white/10 bg-white/5 dark:bg-white/10 backdrop-blur-md p-4 shadow-lg transition-all"
+                whileHover={{ y: -4, boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}
+                className="rounded-2xl bg-white/10 backdrop-blur-md text-white shadow-[0_4px_30px_rgba(0,0,0,0.1)] p-4 space-y-1 hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
               >
                 <div className="text-lg font-bold">{status.code}</div>
                 <div className="text-muted-foreground">{status.description}</div>
