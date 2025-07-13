@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 
 interface SearchBarProps {
   query: string;
@@ -27,13 +28,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery }) => {
   }, [debouncedValue, setQuery]);
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      placeholder="Поиск статуса..."
-      value={inputValue}
-      onChange={(e) => setInputValue(e.target.value)}
-      className="relative z-10 px-4 py-3 text-lg bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-md rounded-xl text-foreground focus:outline-none transition-all duration-200 hover:scale-105 focus:scale-105 focus:ring-2 focus:ring-accent"
-    />
+    <motion.div
+      animate={{ y: inputValue ? -80 : 0 }}
+      transition={{ type: "spring", stiffness: 120, damping: 20 }}
+      className="relative z-10 w-full max-w-[480px]"
+    >
+      <div className="bg-white/10 dark:bg-neutral-900/10 backdrop-blur-lg border border-white/10 rounded-xl shadow-md px-4 py-2 transition-all focus-within:ring-2 focus-within:ring-accent scale-100 focus-within:scale-105">
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Поиск статуса..."
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          className="w-full bg-transparent outline-none"
+        />
+      </div>
+    </motion.div>
   );
 };

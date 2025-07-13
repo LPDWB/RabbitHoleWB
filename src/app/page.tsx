@@ -41,7 +41,7 @@ export default function Home() {
     : [];
 
   return (
-    <main className="relative min-h-screen overflow-y-auto bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300 flex flex-col items-center pt-[100px] gap-6">
+    <main className="relative flex flex-col items-center justify-center min-h-screen overflow-x-hidden bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300">
       {/* Header */}
       <header className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-50">
         <div className="ml-4" />
@@ -59,7 +59,7 @@ export default function Home() {
       )}
 
       <motion.div
-        className="w-full max-w-xl px-4 space-y-3 max-h-[60vh] overflow-y-auto"
+        className="max-h-[60vh] overflow-y-auto mt-6 w-full max-w-[800px] space-y-4 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -75,7 +75,7 @@ export default function Home() {
                   scale: 1.03,
                   boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
                 }}
-                className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-md rounded-xl p-4 cursor-pointer transition-colors duration-300"
+                className="bg-white/10 dark:bg-neutral-800/10 backdrop-blur-md border border-white/10 rounded-xl shadow p-4"
               >
                 <div className="text-lg font-bold">{status.code}</div>
                 <div className="text-muted-foreground">{status.description}</div>
