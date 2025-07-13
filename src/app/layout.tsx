@@ -17,9 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className="transition-colors duration-500 ease-in-out"
+    >
       <body
-        className={`${inter.className} transition-colors duration-300 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-lg`}
+        className={`${inter.className} transition-colors duration-500 ease-in-out`}
       >
         <ThemeProvider
           attribute="class"
@@ -27,7 +31,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <div className="min-h-screen w-full bg-white/5 dark:bg-neutral-900/10 backdrop-blur-2xl transition-colors duration-500">
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>

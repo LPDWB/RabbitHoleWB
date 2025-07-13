@@ -40,8 +40,10 @@ export default function Home() {
       })
     : [];
 
+  const hasResults = filteredStatuses.length > 0;
+
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen overflow-x-hidden bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300">
+    <main className="relative flex flex-col items-center justify-center min-h-screen overflow-x-hidden text-foreground pb-20">
       {/* Header */}
       <header className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-50">
         <div className="ml-4" />
@@ -50,8 +52,10 @@ export default function Home() {
         </div>
       </header>
 
-      <h1 className="text-center text-2xl">{PAGE_TITLE}</h1>
-      <SearchBar query={query} setQuery={setQuery} />
+      <h1 className="absolute top-6 left-6 text-xl font-semibold text-white/70 hover:text-white transition-colors">
+        WMS Stats
+      </h1>
+      <SearchBar query={query} setQuery={setQuery} hasResults={hasResults} />
       {loading && (
         <div className="-mt-2 flex justify-center">
           <LoadingText />
@@ -75,7 +79,7 @@ export default function Home() {
                   scale: 1.03,
                   boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
                 }}
-                className="bg-white/10 dark:bg-neutral-800/10 backdrop-blur-md border border-white/10 rounded-xl shadow p-4"
+                className="rounded-xl border border-white/10 bg-white/5 dark:bg-white/10 backdrop-blur-md p-4 shadow-lg transition-all"
               >
                 <div className="text-lg font-bold">{status.code}</div>
                 <div className="text-muted-foreground">{status.description}</div>
@@ -87,6 +91,11 @@ export default function Home() {
               </motion.div>
             ))}
           </AnimatePresence>
+        )}
+        {!loading && query && !hasResults && (
+          <motion.div className="text-muted-foreground italic mt-4">
+            Ничего не найдено
+          </motion.div>
         )}
       </motion.div>
     </main>
