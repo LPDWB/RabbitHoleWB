@@ -41,7 +41,7 @@ export default function Home() {
     : [];
 
   return (
-    <main className="relative min-h-screen overflow-y-auto bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300">
+    <main className="relative min-h-screen overflow-y-auto bg-white/5 dark:bg-neutral-900/10 backdrop-blur-lg text-foreground pb-20 transition-colors duration-300 flex flex-col items-center pt-[100px] gap-6">
       {/* Header */}
       <header className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-50">
         <div className="ml-4" />
@@ -50,49 +50,45 @@ export default function Home() {
         </div>
       </header>
 
+      <h1 className="text-center text-2xl">{PAGE_TITLE}</h1>
+      <SearchBar query={query} setQuery={setQuery} />
+      {loading && (
+        <div className="-mt-2 flex justify-center">
+          <LoadingText />
+        </div>
+      )}
+
       <motion.div
-        className="fixed left-1/2 top-1/2 z-10 flex w-full max-w-xl -translate-x-1/2 flex-col items-center px-4"
-        initial={{ y: 0 }}
-        animate={{ y: -60 }}
-        transition={{ ease: 'easeOut', duration: 0.3 }}
+        className="w-full max-w-xl px-4 space-y-3 max-h-[60vh] overflow-y-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        <h1 className="text-center text-2xl mb-4">{PAGE_TITLE}</h1>
-        <SearchBar query={query} setQuery={setQuery} />
-        {loading && (
-          <div className="mt-2 flex justify-center">
-            <LoadingText />
-          </div>
+        {error && <p className="text-red-500">Ошибка: {error}</p>}
+        {!loading && (
+          <AnimatePresence>
+            {filteredStatuses.map((status) => (
+              <motion.div
+                key={status.code}
+                {...cardMotion}
+                whileHover={{
+                  scale: 1.03,
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+                }}
+                className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-md rounded-xl p-4 cursor-pointer transition-colors duration-300"
+              >
+                <div className="text-lg font-bold">{status.code}</div>
+                <div className="text-muted-foreground">{status.description}</div>
+                {status.action && (
+                  <div className="text-sm mt-1 text-muted-foreground">
+                    Действия: {status.action}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </motion.div>
-
-      <div className="mt-[calc(50vh+60px)] px-4 w-full flex justify-center">
-        <div className="w-full max-w-xl space-y-3">
-          {error && <p className="text-red-500">Ошибка: {error}</p>}
-          {!loading && (
-            <AnimatePresence>
-              {filteredStatuses.map((status) => (
-                <motion.div
-                  key={status.code}
-                  {...cardMotion}
-                  whileHover={{
-                    scale: 1.03,
-                    boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-                  }}
-                  className="bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/10 shadow-md rounded-xl p-4 cursor-pointer transition-colors duration-300"
-                >
-                  <div className="text-lg font-bold">{status.code}</div>
-                  <div className="text-muted-foreground">{status.description}</div>
-                  {status.action && (
-                    <div className="text-sm mt-1 text-muted-foreground">
-                      Действия: {status.action}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
-      </div>
     </main>
   );
 }
