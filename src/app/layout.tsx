@@ -31,7 +31,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen w-full bg-white/5 dark:bg-neutral-900/10 backdrop-blur-2xl transition-colors duration-500">
+          <div className="min-h-screen w-full bg-background transition-colors duration-500">
             {children}
           </div>
         </ThemeProvider>

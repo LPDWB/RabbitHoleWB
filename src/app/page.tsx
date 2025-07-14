@@ -1,46 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import dynamic from "next/dynamic";
-import { useStatuses } from "@/hooks/useStatuses";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import LoadingText from "@/components/ui/loading-text";
+import { useSearch } from "@/hooks/useSearch";
+import InputSearch from "@/components/InputSearch";
+import SearchResults from "@/components/SearchResults";
+import StatusCard from "@/components/StatusCard";
 
 const ThemeToggle = dynamic(
   () => import("@/components/ui/theme-toggle").then((mod) => mod.ThemeToggle),
   { ssr: false }
 );
 
-const SearchBar = dynamic(
-  () => import("@/components/ui/search-bar").then((mod) => mod.SearchBar),
-  { ssr: false }
-);
-
 const PAGE_TITLE = "Warehouse Statuses";
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const { statuses, loading, error } = useStatuses();
-
-  const cardMotion = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: 20 },
-    transition: { duration: 0.3, ease: "easeInOut" },
-  };
-
-  const filteredStatuses = query.length
-    ? statuses.filter((status) => {
-        const q = query.toLowerCase();
-        return (
-          status.code.toLowerCase().includes(q) ||
-          status.description.toLowerCase().includes(q) ||
-          (status.action && status.action.toLowerCase().includes(q))
-        );
-      })
-    : [];
-
-  const hasResults = filteredStatuses.length > 0;
+  const { query, setQuery, clear, results, loading, error } = useSearch();
+  const hasResults = results.length > 0;
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen overflow-x-hidden text-foreground pb-20">
@@ -53,46 +31,25 @@ export default function Home() {
       </header>
 
       <div className="fixed top-4 left-4 text-white font-semibold text-lg">WMS Stats</div>
-      <SearchBar query={query} setQuery={setQuery} />
+      <InputSearch query={query} onChange={setQuery} onClear={clear} />
       {loading && (
         <div className="-mt-2 flex justify-center">
           <LoadingText />
         </div>
       )}
 
-      <motion.div
-        className="max-h-[70vh] overflow-y-auto mt-6 w-full max-w-[800px] space-y-4 px-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        {error && <p className="text-red-500">Ошибка: {error}</p>}
-        {!loading && (
-          <AnimatePresence>
-            {filteredStatuses.map((status) => (
-              <motion.div
-                key={status.code}
-                {...cardMotion}
-                whileHover={{ y: -4, boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}
-                className="rounded-2xl bg-white/10 backdrop-blur-md text-white shadow-[0_4px_30px_rgba(0,0,0,0.1)] p-4 space-y-1 hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="text-lg font-bold">{status.code}</div>
-                <div className="text-muted-foreground">{status.description}</div>
-                {status.action && (
-                  <div className="text-sm mt-1 text-muted-foreground">
-                    Действия: {status.action}
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+      <SearchResults visible={query.length > 0}>
+        {error && <p className="text-destructive">Ошибка: {error}</p>}
+        {!loading &&
+          results.map((status) => (
+            <StatusCard key={status.code} status={status} query={query} />
+          ))}
         {!loading && query && !hasResults && (
-          <motion.div className="text-muted-foreground italic mt-4">
+          <motion.div className="text-muted-foreground italic">
             Ничего не найдено
           </motion.div>
         )}
-      </motion.div>
+      </SearchResults>
     </main>
   );
 }
