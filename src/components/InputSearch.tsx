@@ -24,7 +24,7 @@ const InputSearch: React.FC<Props> = ({ query, onChange, onClear }) => {
             placeholder="Поиск статуса..."
             value={query}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-xl bg-card text-card-foreground placeholder:text-muted-foreground shadow-md px-4 py-3 outline-none"
+            className="w-full rounded-2xl border border-white/20 bg-black/10 dark:bg-white/10 backdrop-blur-lg text-card-foreground placeholder:text-muted-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.5)] px-4 py-3 outline-none transition-all duration-200 ease-in-out focus:shadow-[0_0_0_3px_rgba(255,255,255,0.2)]"
           />
           <AnimatePresence>
             {query && (
