@@ -19,7 +19,7 @@ const ThemeToggle = dynamic(
 
 const tools = [
   {
-    label: "Выделитель ШК/стоимости",
+    label: "Выделитель ШК/Стикера",
     href: "/tools/extractor",
   },
 ];

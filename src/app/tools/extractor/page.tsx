@@ -4,16 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PriceFormat, parsePrices, parseSkus } from "@/lib/extractor";
+import { parseIds } from "@/lib/extractor";
 
 const MODE_OPTIONS = [
   { value: "sku" as const, label: "ШК" },
-  { value: "price" as const, label: "Стоимость" },
-];
-
-const PRICE_FORMAT_OPTIONS: { value: PriceFormat; label: string }[] = [
-  { value: "report", label: "Формат вывода: отчёт" },
-  { value: "excel", label: "Формат вывода: Excel/CSV" },
+  { value: "sticker" as const, label: "Стикер" },
 ];
 
 interface ToastState {
@@ -23,7 +18,6 @@ interface ToastState {
 
 export default function ExtractorPage() {
   const [mode, setMode] = useState<(typeof MODE_OPTIONS)[number]["value"]>("sku");
-  const [priceFormat, setPriceFormat] = useState<PriceFormat>("report");
   const [unique, setUnique] = useState(true);
   const [raw, setRaw] = useState("");
   const [result, setResult] = useState<string[]>([]);
@@ -36,13 +30,10 @@ export default function ExtractorPage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const resultCount = result.length;
-  const resultTitle = useMemo(
-    () =>
-      mode === "sku"
-        ? `Результат (ШК): ${resultCount}`
-        : `Результат (стоимость): ${resultCount}`,
-    [mode, resultCount]
-  );
+  const resultTitle = useMemo(() => {
+    const label = mode === "sku" ? "ШК" : "Стикер";
+    return `Результат (${label}): ${resultCount}`;
+  }, [mode, resultCount]);
 
   const showToast = useCallback((message: string) => {
     if (toastTimer.current) {
@@ -62,25 +53,22 @@ export default function ExtractorPage() {
       if (!trimmed) {
         setResult([]);
         if (notify) {
-          showToast("Готово: 0 элементов");
+          showToast("Готово: 0 записей");
         }
         return 0;
       }
 
-      const parsed =
-        mode === "sku"
-          ? parseSkus(input, { unique })
-          : parsePrices(input, { unique, format: priceFormat });
+      const parsed = parseIds(input, { mode, unique });
 
       setResult(parsed);
 
       if (notify) {
-        showToast(`Готово: ${parsed.length} элементов`);
+        showToast(`Готово: ${parsed.length} записей`);
       }
 
       return parsed.length;
     },
-    [mode, priceFormat, showToast, unique]
+    [mode, showToast, unique]
   );
 
   const handleProcess = useCallback(() => {
@@ -143,7 +131,7 @@ export default function ExtractorPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = mode === "sku" ? "skus.txt" : "prices.txt";
+    link.download = mode === "sku" ? "skus.txt" : "stickers.txt";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -155,7 +143,7 @@ export default function ExtractorPage() {
     if (raw !== lastProcessedRaw) return;
 
     processInput(lastProcessedRaw, { notify: false });
-  }, [hasProcessed, lastProcessedRaw, processInput, priceFormat, mode, unique, raw]);
+  }, [hasProcessed, lastProcessedRaw, processInput, mode, unique, raw]);
 
   useEffect(() => {
     if (!lastProcessedRaw) return;
@@ -216,7 +204,7 @@ export default function ExtractorPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Выделитель ШК/стоимости</h1>
+            <h1 className="text-2xl font-semibold">Выделитель ШК/Стикера</h1>
             <p className="text-sm text-muted-foreground">
               Вставьте данные из отчёта, выберите режим и получите очищенный список.
             </p>
@@ -239,25 +227,6 @@ export default function ExtractorPage() {
                 </button>
               ))}
             </div>
-            {mode === "price" && (
-              <div className="flex gap-2 rounded-lg bg-muted p-1 text-sm">
-                {PRICE_FORMAT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setPriceFormat(option.value)}
-                    className={cn(
-                      "rounded-md px-4 py-2 font-medium transition-colors",
-                      priceFormat === option.value
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
             <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
