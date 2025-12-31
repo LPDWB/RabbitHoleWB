@@ -27,11 +27,19 @@
     --radius: 0.5rem;
 
     /* liquid glass tokens */
-    --glass-bg: hsl(var(--card) / 0.82);
+    --glass-bg: linear-gradient(
+      140deg,
+      hsl(var(--card) / 0.9),
+      hsl(var(--background) / 0.94)
+    );
     --glass-border: hsl(var(--foreground) / 0.12);
-    --glass-shadow: 0 18px 40px hsl(var(--foreground) / 0.1);
-    --glass-blur: 12px;
-    --glass-ring: hsl(var(--ring) / 0.35);
+    --glass-highlight: hsl(var(--foreground) / 0.08);
+    --glass-shadow:
+      0 16px 36px hsl(var(--foreground) / 0.12),
+      0 2px 10px hsl(var(--foreground) / 0.05);
+    --glass-blur: 18px;
+    --glass-sheen: linear-gradient(180deg, hsl(var(--foreground) / 0.08), transparent 40%, transparent 100%);
+    --glass-ring: hsl(var(--ring) / 0.4);
   }
 
   .dark {
@@ -59,14 +67,18 @@
     /* liquid glass tokens */
     --glass-bg: linear-gradient(
       155deg,
-      hsl(220 34% 16% / 0.88),
-      hsl(223 36% 13% / 0.82),
-      hsl(226 38% 12% / 0.78)
+      hsl(210 34% 16% / 0.85),
+      hsl(207 36% 14% / 0.82),
+      hsl(204 38% 12% / 0.9)
     );
     --glass-border: hsl(var(--foreground) / 0.22);
-    --glass-shadow: 0 24px 60px hsl(220 45% 7% / 0.65);
-    --glass-blur: 16px;
-    --glass-ring: hsl(var(--ring) / 0.48);
+    --glass-highlight: hsl(var(--foreground) / 0.12);
+    --glass-shadow:
+      0 22px 54px hsl(214 52% 6% / 0.6),
+      0 4px 18px hsl(214 44% 14% / 0.4);
+    --glass-blur: 18px;
+    --glass-sheen: linear-gradient(180deg, hsl(var(--foreground) / 0.12), transparent 38%, transparent 100%);
+    --glass-ring: hsl(var(--ring) / 0.52);
   }
 }
 
@@ -79,59 +91,66 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(80% 40% at 50% 96%, hsl(270 50% 70% / 0.16), transparent 70%),
-      radial-gradient(90% 55% at 14% 10%, hsl(var(--accent) / 0.18), transparent 55%),
-      radial-gradient(110% 70% at 88% 8%, hsl(var(--primary) / 0.12), transparent 60%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.9) 36%, hsl(var(--card) / 0.72) 100%);
+      radial-gradient(130% 90% at 12% 14%, hsl(205 72% 78% / 0.35), transparent 58%),
+      radial-gradient(110% 70% at 80% 8%, hsl(332 78% 82% / 0.22), transparent 60%),
+      radial-gradient(120% 85% at 30% 78%, hsl(46 92% 82% / 0.25), transparent 68%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.9) 40%, hsl(var(--card) / 0.78) 100%);
     background-attachment: fixed;
   }
 
   .dark body {
     background-image:
-      radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.8), transparent),
-      radial-gradient(1px 1px at 78% 44%, rgba(210, 230, 255, 0.65), transparent),
-      radial-gradient(1px 1px at 52% 76%, rgba(255, 255, 255, 0.7), transparent),
-      radial-gradient(60% 42% at 50% 106%, hsl(270 67% 54% / 0.32), transparent 72%),
-      radial-gradient(70% 46% at 64% 102%, hsl(255 64% 48% / 0.24), transparent 75%),
-      radial-gradient(140% 120% at 50% 50%, transparent 62%, rgba(2, 4, 12, 0.7)),
-      linear-gradient(180deg, #050812 0%, #080c18 32%, #040713 100%);
-    background-size:
-      260px 260px,
-      340px 340px,
-      420px 420px,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%;
-    background-repeat:
-      repeat,
-      repeat,
-      repeat,
-      no-repeat,
-      no-repeat,
-      no-repeat,
-      no-repeat;
+      radial-gradient(120% 110% at 20% 12%, hsl(209 78% 40% / 0.16), transparent 60%),
+      radial-gradient(140% 120% at 78% 10%, hsl(217 70% 24% / 0.2), transparent 66%),
+      radial-gradient(120% 120% at 25% 72%, hsl(196 72% 32% / 0.14), transparent 70%),
+      radial-gradient(140% 130% at 50% 95%, hsl(215 50% 12% / 0.6), transparent 75%),
+      linear-gradient(180deg, #0c121b 0%, #0f1a28 30%, #0b1320 100%);
     background-attachment: fixed;
   }
 }
 
 @layer utilities {
-  .glass-surface {
+  .glass {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: var(--glass-sheen);
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .glass > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .glass-surface {
+    @apply glass;
   }
 
   .glass-field {
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: 1px solid hsl(var(--foreground) / 0.12);
     box-shadow:
-      inset 0 1px 0 hsl(var(--foreground) / 0.08),
-      0 10px 30px hsl(var(--foreground) / 0.04);
+      inset 0 1px 0 var(--glass-highlight),
+      0 10px 30px hsl(var(--foreground) / 0.08);
     backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    position: relative;
+    overflow: hidden;
   }
 }
 
