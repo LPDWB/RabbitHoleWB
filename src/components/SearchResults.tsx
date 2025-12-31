@@ -16,7 +16,7 @@ const SearchResults: React.FC<Props> = ({ visible, children }) => (
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.2 }}
-        className="mt-4 max-h-[60vh] w-full mx-auto max-w-[90%] md:max-w-[60%] overflow-y-auto space-y-3 px-4"
+        className="mx-auto mt-6 flex w-full max-w-3xl flex-col gap-3 overflow-y-auto max-h-[60vh]"
       >
         {children}
       </motion.div>

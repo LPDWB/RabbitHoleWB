@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import React from "react";
 
 interface Props {
@@ -12,36 +12,31 @@ interface Props {
 
 const InputSearch: React.FC<Props> = ({ query, onChange, onClear }) => {
   return (
-    <motion.div
-      className="fixed inset-0 z-40 flex items-start justify-center pointer-events-none"
-      animate={{ y: query ? -100 : 0 }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-    >
-      <div className="pointer-events-auto mt-40 w-full px-4">
-        <div className="relative mx-auto w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Поиск статуса..."
-            value={query}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-2xl border border-white/20 bg-black/10 dark:bg-white/10 backdrop-blur-lg text-card-foreground placeholder:text-muted-foreground shadow-[0_4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.5)] px-4 py-3 outline-none transition-all duration-200 ease-in-out focus:shadow-[0_0_0_3px_rgba(255,255,255,0.2)]"
-          />
-          <AnimatePresence>
-            {query && (
-              <motion.button
-                key="clear"
-                type="button"
-                onClick={onClear}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/70 hover:text-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <X className="h-4 w-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
+    <motion.div className="w-full" animate={{ y: query ? -4 : 0 }} transition={{ duration: 0.3 }}>
+      <div className="relative mx-auto w-full max-w-2xl">
+        <input
+          type="text"
+          placeholder="Поиск статуса..."
+          value={query}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-xl border border-input bg-background/80 px-11 py-4 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <AnimatePresence>
+          {query && (
+            <motion.button
+              key="clear"
+              type="button"
+              onClick={onClear}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <X className="h-4 w-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
