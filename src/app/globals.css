@@ -5,20 +5,20 @@
 @layer base {
   :root {
     /* light theme */
-    --background: 42 38% 96%; /* #F8F1E8 */
-    --foreground: 210 33% 14%; /* #1F2A36 */
-    --card: 210 26% 94%; /* #E6ECF2 */
-    --card-foreground: 210 33% 14%;
+    --background: 38 46% 97%; /* morning mist base */
+    --foreground: 214 26% 16%;
+    --card: 210 28% 94%;
+    --card-foreground: 214 26% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 33% 14%;
-    --primary: 207 45% 22%;
+    --popover-foreground: 214 26% 16%;
+    --primary: 214 42% 24%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 42 32% 92%;
-    --secondary-foreground: 210 33% 14%;
-    --muted: 210 20% 90%;
-    --muted-foreground: 215 16% 38%;
-    --accent: 195 26% 88%;
-    --accent-foreground: 210 33% 14%;
+    --secondary: 42 30% 92%;
+    --secondary-foreground: 214 26% 16%;
+    --muted: 210 22% 90%;
+    --muted-foreground: 215 16% 36%;
+    --accent: 218 32% 88%;
+    --accent-foreground: 214 26% 16%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 18% 82%;
@@ -44,25 +44,25 @@
 
   .dark {
     /* dark theme */
-    --background: 205.7 45.2% 12.2%; /* #11212D */
-    --foreground: 165 4.1% 80.8%; /* #CCD0CF */
-    --card: 207.9 34.1% 16.1%; /* #1B2A37 */
-    --card-foreground: 165 4.1% 80.8%;
-    --popover: 240 10% 3.9%;
+    --background: 222 42% 7%; /* deep night base */
+    --foreground: 210 18% 88%;
+    --card: 220 32% 12%;
+    --card-foreground: 210 18% 88%;
+    --popover: 222 36% 8%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 224 28% 14%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted: 224 24% 16%;
+    --muted-foreground: 220 10% 74%;
+    --accent: 224 24% 18%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 224 24% 18%;
+    --input: 224 24% 18%;
+    --ring: 240 10% 76%;
 
     /* liquid glass tokens */
     --glass-bg: linear-gradient(
