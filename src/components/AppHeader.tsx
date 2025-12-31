@@ -34,8 +34,10 @@ export function AppHeader() {
                 key={item.href}
                 asChild
                 className={cn(
-                  "h-9 px-3 py-2 text-sm font-medium bg-transparent text-muted-foreground hover:bg-muted",
-                  isActive && "bg-background text-foreground shadow-sm hover:bg-background"
+                  "relative h-9 px-3 py-2 text-sm font-medium bg-transparent text-muted-foreground shadow-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  isActive
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border/70 hover:bg-background"
+                    : "hover:bg-muted/70"
                 )}
               >
                 <Link href={item.href}>{item.label}</Link>
