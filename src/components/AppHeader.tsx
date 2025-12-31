@@ -24,7 +24,6 @@ const ThemeToggle = dynamic(
 export function AppHeader() {
   const pathname = usePathname();
   const isToolsActive = pathname?.startsWith("/tools");
-  const isSeparatorActive = pathname === "/tools/separator";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4">
@@ -54,17 +53,6 @@ export function AppHeader() {
                   )}
                 >
                   Инструменты
-                </Link>
-              </SheetClose>
-              <SheetClose asChild>
-                <Link
-                  href="/tools/separator"
-                  className={cn(
-                    "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    isSeparatorActive && "bg-muted text-foreground"
-                  )}
-                >
-                  Выделитель ШК/Стикера
                 </Link>
               </SheetClose>
             </nav>
