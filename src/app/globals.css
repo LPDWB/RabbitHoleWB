@@ -25,6 +25,13 @@
     --input: 210 18% 82%;
     --ring: 207 50% 28%;
     --radius: 0.5rem;
+
+    /* liquid glass tokens */
+    --glass-bg: hsl(var(--card) / 0.75);
+    --glass-border: hsl(var(--foreground) / 0.08);
+    --glass-shadow: 0 18px 40px hsl(var(--foreground) / 0.08);
+    --glass-blur: 12px;
+    --glass-ring: hsl(var(--ring) / 0.35);
   }
 
   .dark {
@@ -48,6 +55,18 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
+    /* liquid glass tokens */
+    --glass-bg: linear-gradient(
+      145deg,
+      hsl(210 35% 16% / 0.8),
+      hsl(207 36% 14% / 0.82),
+      hsl(204 34% 12% / 0.92)
+    );
+    --glass-border: hsl(var(--foreground) / 0.18);
+    --glass-shadow: 0 20px 50px hsl(214 44% 10% / 0.55);
+    --glass-blur: 16px;
+    --glass-ring: hsl(var(--ring) / 0.45);
   }
 }
 
@@ -60,13 +79,39 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(circle at 20% 18%, hsl(var(--card) / 0.35), transparent 42%),
-      radial-gradient(circle at 80% -5%, hsl(var(--primary) / 0.12), transparent 38%);
+      radial-gradient(110% 80% at 12% 14%, hsl(var(--accent) / 0.25), transparent 55%),
+      radial-gradient(120% 90% at 88% 6%, hsl(var(--primary) / 0.16), transparent 58%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.85) 35%, hsl(var(--card) / 0.65) 100%);
     background-attachment: fixed;
   }
 
   .dark body {
-    background-image: none;
+    background-image:
+      radial-gradient(120% 110% at 20% 10%, hsl(209 60% 32% / 0.2), transparent 60%),
+      radial-gradient(140% 120% at 78% 12%, hsl(217 65% 18% / 0.28), transparent 65%),
+      radial-gradient(140% 130% at 50% 95%, hsl(215 50% 12% / 0.6), transparent 75%),
+      linear-gradient(180deg, #0c121b 0%, #0f1a28 30%, #0b1320 100%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .glass-surface {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-field {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.08),
+      0 10px 30px hsl(var(--foreground) / 0.04);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
   }
 }
 
