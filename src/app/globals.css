@@ -5,25 +5,25 @@
 @layer base {
   :root {
     /* light theme */
-    --background: 165 4.1% 80.8%; /* #CCD0CF */
-    --foreground: 200 63.6% 6.5%; /* #06141B */
-    --card: 191.2 8.7% 63.9%; /* #9BA8AB */
-    --card-foreground: 200 63.6% 6.5%;
+    --background: 42 38% 96%; /* #F8F1E8 */
+    --foreground: 210 33% 14%; /* #1F2A36 */
+    --card: 210 26% 94%; /* #E6ECF2 */
+    --card-foreground: 210 33% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --popover-foreground: 210 33% 14%;
+    --primary: 207 45% 22%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --secondary: 42 32% 92%;
+    --secondary-foreground: 210 33% 14%;
+    --muted: 210 20% 90%;
+    --muted-foreground: 215 16% 38%;
+    --accent: 195 26% 88%;
+    --accent-foreground: 210 33% 14%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 210 18% 82%;
+    --input: 210 18% 82%;
+    --ring: 207 50% 28%;
     --radius: 0.5rem;
   }
 
@@ -58,6 +58,15 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 20% 18%, hsl(var(--card) / 0.35), transparent 42%),
+      radial-gradient(circle at 80% -5%, hsl(var(--primary) / 0.12), transparent 38%);
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image: none;
   }
 }
 
