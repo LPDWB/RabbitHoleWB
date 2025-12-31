@@ -27,7 +27,7 @@ function highlight(text: string, query: string) {
 const StatusCard: React.FC<Props> = ({ status, query }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
-      <Card className="rounded-2xl border border-border/70 bg-card/80 backdrop-blur transition-colors hover:border-ring/70 hover:shadow-md focus-within:ring-2 focus-within:ring-ring/60">
+      <Card className="rounded-2xl transition-colors hover:border-[color:var(--glass-ring)] hover:shadow-lg focus-within:ring-2 focus-within:ring-[color:var(--glass-ring)]">
         <CardContent className="space-y-2 p-5">
           <div className="text-lg font-semibold leading-tight">{highlight(status.code, query)}</div>
           <div className="text-sm leading-relaxed text-foreground/90">{highlight(status.description, query)}</div>

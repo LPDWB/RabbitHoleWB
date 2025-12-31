@@ -19,7 +19,7 @@ const InputSearch: React.FC<Props> = ({ query, onChange, onClear }) => {
           placeholder="Поиск статуса..."
           value={query}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background/80 px-11 py-4 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="glass-field w-full rounded-xl px-11 py-4 text-base ring-offset-background placeholder:text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--glass-ring)] focus-visible:ring-offset-2"
         />
         <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <AnimatePresence>

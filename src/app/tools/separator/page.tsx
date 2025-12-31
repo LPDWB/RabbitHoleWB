@@ -240,7 +240,7 @@ export default function SeparatorPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur">
+          <div className="glass-surface flex flex-col gap-4 rounded-2xl p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Исходные данные</h2>
               <div className="flex flex-wrap items-center gap-2">
@@ -261,12 +261,12 @@ export default function SeparatorPage() {
               value={raw}
               onChange={(event) => setRaw(event.target.value)}
               placeholder="Вставьте данные отчёта или списка..."
-              className="h-80 w-full resize-none rounded-lg border border-border bg-background/60 px-4 py-3 font-mono text-sm text-foreground shadow-sm outline-none transition focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              className="glass-field h-80 w-full resize-none rounded-lg px-4 py-3 font-mono text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--glass-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             <p className="text-xs text-muted-foreground">Подсказка: можно вставлять Ctrl+V</p>
           </div>
 
-          <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card/60 p-6 shadow-lg backdrop-blur">
+          <div className="glass-surface flex flex-col gap-4 rounded-2xl p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">{resultTitle}</h2>
               <div className="flex flex-wrap items-center gap-2">
@@ -291,7 +291,7 @@ export default function SeparatorPage() {
               value={result.join("\n")}
               readOnly
               spellCheck={false}
-              className="h-80 w-full resize-none rounded-lg border border-border bg-background/40 px-4 py-3 font-mono text-sm text-foreground opacity-90 shadow-sm outline-none"
+              className="glass-field h-80 w-full resize-none rounded-lg px-4 py-3 font-mono text-sm text-foreground opacity-95 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--glass-ring)]"
             />
           </div>
         </div>
