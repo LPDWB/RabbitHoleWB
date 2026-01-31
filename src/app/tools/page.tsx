@@ -31,7 +31,7 @@ export default function ToolsPage() {
           {tools.map((tool) => (
             <div
               key={tool.href}
-              className="glass-surface flex h-full flex-col justify-between rounded-2xl p-6 transition hover:border-ring/80 hover:shadow-lg focus-within:ring-2 focus-within:ring-[color:var(--glass-ring)] focus-within:ring-offset-2"
+              className="glass flex h-full flex-col justify-between rounded-2xl p-6 transition hover:border-ring/80 hover:shadow-lg focus-within:ring-2 focus-within:ring-[color:var(--glass-ring)] focus-within:ring-offset-2"
             >
               <div className="flex items-start gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/90 via-primary to-emerald-500/80 text-background shadow-sm" />
