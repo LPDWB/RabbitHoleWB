@@ -8,11 +8,17 @@ export function useSearch() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return statuses.filter((s) =>
-      s.code.toLowerCase().includes(q) ||
-      s.description.toLowerCase().includes(q) ||
-      (s.action && s.action.toLowerCase().includes(q))
-    );
+    return statuses.filter((status) => {
+      if (!status) return false;
+      const code = status.code?.toLowerCase?.() ?? "";
+      const description = status.description?.toLowerCase?.() ?? "";
+      const action = status.action?.toLowerCase?.() ?? "";
+      return (
+        code.includes(q) ||
+        description.includes(q) ||
+        (action && action.includes(q))
+      );
+    });
   }, [query, statuses]);
 
   const clear = () => setQuery("");
