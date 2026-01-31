@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,9 +32,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen w-full bg-background transition-colors duration-500">
-            {children}
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen w-full bg-background transition-colors duration-500">
+              {children}
+            </div>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

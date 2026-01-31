@@ -10,11 +10,20 @@ interface Props {
   query: string;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function highlight(text: string, query: string) {
-  if (!query) return text;
-  const regex = new RegExp(`(${query})`, "gi");
-  return text.split(regex).map((part, i) =>
-    regex.test(part) ? (
+  const safeText = text ?? "";
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return safeText;
+  const escapedQuery = escapeRegExp(trimmedQuery);
+  const splitRegex = new RegExp(`(${escapedQuery})`, "gi");
+  const lowerQuery = trimmedQuery.toLowerCase();
+
+  return safeText.split(splitRegex).map((part, i) =>
+    part.toLowerCase() === lowerQuery ? (
       <span key={i} className="bg-foreground/20">
         {part}
       </span>
