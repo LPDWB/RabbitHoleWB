@@ -30,7 +30,7 @@ function highlight(text: string, query: string) {
 
   return safeText.split(splitRegex).map((part, index) =>
     part.toLowerCase() === lowerQuery ? (
-      <span key={index} className="rounded bg-accent/18 px-0.5 text-foreground">
+      <span key={index} className="rounded bg-accent/16 px-0.5 text-foreground">
         {part}
       </span>
     ) : (
@@ -43,10 +43,7 @@ export default function StatusCard({ status, query, index = 0 }: Props) {
   const [copied, setCopied] = useState<"code" | "text" | null>(null);
 
   const copyCodeText = useMemo(() => getStatusCodeCopyText(status.code ?? ""), [status.code]);
-  const copyStatusText = useMemo(
-    () => getStatusTextCopyText(status),
-    [status]
-  );
+  const copyStatusText = useMemo(() => getStatusTextCopyText(status), [status]);
 
   const triggerCopiedState = (value: "code" | "text") => {
     setCopied(value);
@@ -93,29 +90,20 @@ export default function StatusCard({ status, query, index = 0 }: Props) {
       transition={{ duration: 0.24, delay: Math.min(index * 0.04, 0.2) }}
     >
       <Card
-        data-glow="strong"
-        className="panel-surface-strong interactive-surface-strong group overflow-hidden rounded-[1.5rem] border-border/75"
+        data-glow="base"
+        className="panel-surface interactive-surface group overflow-hidden rounded-[1.45rem] border-border/60"
       >
         <CardContent className="p-0">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/35 to-transparent" />
-          <div className="absolute -right-20 top-0 h-40 w-40 rounded-full bg-accent/8 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
-
           <div className="relative flex flex-col gap-5 p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-border/65 bg-background/45 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Найденный статус
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    Status Code
-                  </p>
-                  <div className="flex items-end gap-3">
-                    <h3 className="font-mono text-[2rem] font-semibold tracking-[-0.05em] text-foreground sm:text-[2.4rem]">
-                      {highlight(status.code, query)}
-                    </h3>
-                  </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                  Status
+                </p>
+                <div className="mt-2 flex items-end gap-3">
+                  <h3 className="font-mono text-[2rem] font-semibold tracking-[-0.05em] text-foreground sm:text-[2.35rem]">
+                    {highlight(status.code, query)}
+                  </h3>
                 </div>
               </div>
 
@@ -153,7 +141,7 @@ export default function StatusCard({ status, query, index = 0 }: Props) {
             </div>
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <section className="content-panel rounded-[1.2rem] p-4 sm:p-5">
+              <section className="content-panel rounded-[1.15rem] p-4 sm:p-5">
                 <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   Описание
                 </p>
@@ -162,7 +150,7 @@ export default function StatusCard({ status, query, index = 0 }: Props) {
                 </p>
               </section>
 
-              <section className="content-panel rounded-[1.2rem] p-4 sm:p-5">
+              <section className="content-panel rounded-[1.15rem] p-4 sm:p-5">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
                     Действия

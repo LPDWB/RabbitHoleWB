@@ -10,10 +10,10 @@ type GlowPreset = {
 };
 
 const GLOW_PRESETS: Record<string, GlowPreset> = {
-  idle: { opacity: 0.36, scale: 1 },
-  base: { opacity: 0.46, scale: 1.02 },
-  strong: { opacity: 0.62, scale: 1.08 },
-  action: { opacity: 0.74, scale: 0.94 },
+  idle: { opacity: 0.18, scale: 1 },
+  base: { opacity: 0.24, scale: 1.02 },
+  strong: { opacity: 0.3, scale: 1.05 },
+  action: { opacity: 0.2, scale: 0.96 },
 };
 
 type AmbientCursorGlowProps = {
@@ -64,13 +64,8 @@ export function AmbientCursorGlow({ children, className }: AmbientCursorGlowProp
 
     if (!enabled) {
       stage.style.setProperty("--glow-opacity", "0");
-      stage.dataset.glowEnabled = "false";
       return;
     }
-
-    stage.dataset.glowEnabled = "true";
-
-    let bounds = stage.getBoundingClientRect();
 
     const setPreset = (presetName?: string) => {
       const preset = GLOW_PRESETS[presetName ?? "idle"] ?? GLOW_PRESETS.idle;
@@ -78,31 +73,19 @@ export function AmbientCursorGlow({ children, className }: AmbientCursorGlowProp
       pointerRef.current.targetScale = preset.scale;
     };
 
-    const updateBounds = () => {
-      bounds = stage.getBoundingClientRect();
-    };
-
     const updatePointer = (event: PointerEvent) => {
       if (event.pointerType && event.pointerType !== "mouse") return;
 
-      const relativeX = event.clientX - bounds.left;
-      const relativeY = event.clientY - bounds.top;
-
-      pointerRef.current.targetX = relativeX;
-      pointerRef.current.targetY = relativeY;
+      pointerRef.current.targetX = event.clientX;
+      pointerRef.current.targetY = event.clientY;
 
       if (pointerRef.current.currentX === 0 && pointerRef.current.currentY === 0) {
-        pointerRef.current.currentX = relativeX;
-        pointerRef.current.currentY = relativeY;
+        pointerRef.current.currentX = event.clientX;
+        pointerRef.current.currentY = event.clientY;
       }
 
       const zone = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-glow]");
       setPreset(zone?.dataset.glow);
-    };
-
-    const handlePointerEnter = (event: PointerEvent) => {
-      updateBounds();
-      updatePointer(event);
     };
 
     const handlePointerLeave = () => {
@@ -110,13 +93,17 @@ export function AmbientCursorGlow({ children, className }: AmbientCursorGlowProp
       pointerRef.current.targetScale = 1;
     };
 
+    const handleWindowBlur = () => {
+      pointerRef.current.targetOpacity = 0;
+    };
+
     const animate = () => {
       const pointer = pointerRef.current;
 
-      pointer.currentX += (pointer.targetX - pointer.currentX) * 0.16;
-      pointer.currentY += (pointer.targetY - pointer.currentY) * 0.16;
-      pointer.currentOpacity += (pointer.targetOpacity - pointer.currentOpacity) * 0.12;
-      pointer.currentScale += (pointer.targetScale - pointer.currentScale) * 0.12;
+      pointer.currentX += (pointer.targetX - pointer.currentX) * 0.12;
+      pointer.currentY += (pointer.targetY - pointer.currentY) * 0.12;
+      pointer.currentOpacity += (pointer.targetOpacity - pointer.currentOpacity) * 0.08;
+      pointer.currentScale += (pointer.targetScale - pointer.currentScale) * 0.1;
 
       stage.style.setProperty("--glow-x", `${pointer.currentX}px`);
       stage.style.setProperty("--glow-y", `${pointer.currentY}px`);
@@ -128,18 +115,14 @@ export function AmbientCursorGlow({ children, className }: AmbientCursorGlowProp
 
     frameRef.current = window.requestAnimationFrame(animate);
 
-    stage.addEventListener("pointerenter", handlePointerEnter);
-    stage.addEventListener("pointermove", updatePointer);
-    stage.addEventListener("pointerleave", handlePointerLeave);
-    window.addEventListener("resize", updateBounds);
-    window.addEventListener("scroll", updateBounds, { passive: true });
+    window.addEventListener("pointermove", updatePointer, { passive: true });
+    window.addEventListener("pointerleave", handlePointerLeave);
+    window.addEventListener("blur", handleWindowBlur);
 
     return () => {
-      stage.removeEventListener("pointerenter", handlePointerEnter);
-      stage.removeEventListener("pointermove", updatePointer);
-      stage.removeEventListener("pointerleave", handlePointerLeave);
-      window.removeEventListener("resize", updateBounds);
-      window.removeEventListener("scroll", updateBounds);
+      window.removeEventListener("pointermove", updatePointer);
+      window.removeEventListener("pointerleave", handlePointerLeave);
+      window.removeEventListener("blur", handleWindowBlur);
 
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
@@ -148,8 +131,8 @@ export function AmbientCursorGlow({ children, className }: AmbientCursorGlowProp
   }, [enabled]);
 
   return (
-    <div ref={stageRef} className={cn("glow-stage", className)} data-glow-enabled="false">
-      <div className="glow-overlay" aria-hidden="true">
+    <div ref={stageRef} className={cn("glow-stage", className)}>
+      <div className="glow-overlay-fixed" aria-hidden="true">
         <div className="glow-orb" />
         <div className="glow-orb glow-orb-secondary" />
       </div>

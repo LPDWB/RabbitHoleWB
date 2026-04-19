@@ -2,13 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Clock3,
-  FolderTree,
-  SearchCode,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react";
+import { Clock3, FolderTree, TrendingUp } from "lucide-react";
 
 import AmbientCursorGlow from "@/components/AmbientCursorGlow";
 import { AppHeader } from "@/components/AppHeader";
@@ -21,36 +15,12 @@ import { useSearch } from "@/hooks/useSearch";
 const RECENT_QUERIES_KEY = "wms-stats:recent-queries";
 
 const QUICK_CATEGORIES = [
-  {
-    label: "Приемка",
-    query: "приемка",
-    hint: "Поступление, приемка и оприходование товара",
-  },
-  {
-    label: "Упаковка",
-    query: "упаковка",
-    hint: "Переупаковка, доупаковка и контроль упаковки",
-  },
-  {
-    label: "Сборка",
-    query: "сборка",
-    hint: "Листы сборки, подбор товара и маршруты отбора",
-  },
-  {
-    label: "Сортировка",
-    query: "сортировка",
-    hint: "Распределение по потокам, направлениям и зонам",
-  },
-  {
-    label: "Инвентаризация",
-    query: "инвентаризация",
-    hint: "Проверка остатков, ячеек и штрихкодов",
-  },
-  {
-    label: "Брак",
-    query: "брак",
-    hint: "Дефекты, экспертиза, возвраты и утилизация",
-  },
+  { label: "Приемка", query: "приемка", hint: "Поступление и оприходование" },
+  { label: "Упаковка", query: "упаковка", hint: "Переупаковка и контроль" },
+  { label: "Сборка", query: "сборка", hint: "Подбор и маршруты отбора" },
+  { label: "Сортировка", query: "сортировка", hint: "Потоки и направления" },
+  { label: "Инвентаризация", query: "инвентаризация", hint: "Остатки и ячейки" },
+  { label: "Брак", query: "брак", hint: "Дефекты и возвраты" },
 ];
 
 function uniqueStatusesByCode<T extends { code: string }>(items: T[]) {
@@ -121,36 +91,15 @@ export default function Home() {
       <AppHeader />
 
       <AmbientCursorGlow className="mx-auto w-full max-w-[1440px] px-4 pb-12 pt-6 sm:px-6 lg:px-8 lg:pb-14 lg:pt-8">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
           <section className="min-w-0 space-y-4 lg:space-y-5">
-            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_260px] 2xl:items-end">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-[11px] text-muted-foreground">
-                  <SearchCode className="h-3.5 w-3.5 text-accent" />
-                  Internal lookup console
-                </div>
-
-                <div className="max-w-3xl space-y-3">
-                  <h1 className="text-balance text-4xl font-semibold tracking-[-0.05em] text-gradient-soft sm:text-5xl">
-                    Поиск статусов WMS
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[15px]">
-                    Рабочая консоль для быстрого поиска кодов, описаний и действий по
-                    статусам. Введите точный код или ключевые слова, чтобы сразу
-                    получить нужный ответ без лишней навигации.
-                  </p>
-                </div>
-              </div>
-
-              <div className="panel-surface hidden rounded-[1.35rem] p-4 2xl:block">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Режим поиска
-                </p>
-                <p className="mt-2 text-sm leading-6 text-foreground/92">
-                  Коды обрабатываются как команда. Текстовые запросы ищут по словам в
-                  описании и действиях.
-                </p>
-              </div>
+            <div className="max-w-3xl space-y-2">
+              <h1 className="text-balance text-4xl font-semibold tracking-[-0.05em] text-gradient-soft sm:text-5xl">
+                Поиск статусов WMS
+              </h1>
+              <p className="text-sm text-muted-foreground sm:text-[15px]">
+                Введите статус или краткое описание статуса.
+              </p>
             </div>
 
             <InputSearch
@@ -168,13 +117,12 @@ export default function Home() {
                   exit={{ opacity: 0, y: 6 }}
                   className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground"
                 >
-                  <span className="rounded-full border border-border/70 bg-card/70 px-3 py-1">
+                  <span className="rounded-full bg-background/28 px-3 py-1">
                     Запрос: <span className="font-medium text-foreground">{query}</span>
                   </span>
                   {!loading && (
-                    <span className="rounded-full border border-border/70 bg-card/70 px-3 py-1">
-                      Найдено:{" "}
-                      <span className="font-medium text-foreground">{results.length}</span>
+                    <span className="rounded-full bg-background/28 px-3 py-1">
+                      Найдено: <span className="font-medium text-foreground">{results.length}</span>
                     </span>
                   )}
                 </motion.div>
@@ -186,7 +134,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.24 }}
-                className="panel-surface rounded-[1.45rem] p-4 sm:p-5"
+                className="panel-surface rounded-[1.4rem] p-4 sm:p-5"
               >
                 <div className="mb-4 flex items-center gap-2">
                   <FolderTree className="h-4 w-4 text-accent" />
@@ -200,15 +148,17 @@ export default function Home() {
                       data-glow="base"
                       type="button"
                       onClick={() => applyQuery(category.query)}
-                      className="panel-surface interactive-surface group rounded-[1.2rem] p-4 text-left"
+                      className="content-panel interactive-surface group rounded-[1.15rem] p-4 text-left"
                     >
-                      <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-medium text-foreground">
                           {category.label}
                         </span>
-                        <Sparkles className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-accent" />
+                        <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/82">
+                          {category.query}
+                        </span>
                       </div>
-                      <p className="text-xs leading-6 text-muted-foreground">
+                      <p className="mt-2 text-xs leading-6 text-muted-foreground">
                         {category.hint}
                       </p>
                     </button>
@@ -244,67 +194,70 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="panel-surface rounded-[1.45rem] p-6 text-sm text-muted-foreground"
+                  className="panel-surface rounded-[1.4rem] p-6 text-sm text-muted-foreground"
                 >
-                  Ничего не найдено. Попробуйте сократить запрос, ввести код статуса
-                  целиком или выбрать одну из быстрых категорий выше.
+                  Ничего не найдено. Попробуйте сократить запрос или ввести код статуса целиком.
                 </motion.div>
               )}
             </SearchResults>
           </section>
 
-          <aside className="space-y-4 xl:sticky xl:top-24">
-            <section className="panel-surface rounded-[1.45rem] p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-accent" />
-                <h2 className="text-sm font-semibold tracking-tight">Популярные статусы</h2>
-              </div>
-
-              {loading ? (
-                <LoadingText />
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {popularStatuses.map((status) => (
-                    <button
-                      key={`popular-${status.code}`}
-                      data-glow="action"
-                      type="button"
-                      onClick={() => applyQuery(status.code)}
-                      className="action-chip rounded-xl font-mono"
-                    >
-                      {status.code}
-                    </button>
-                  ))}
+          <aside className="xl:sticky xl:top-24">
+            <div className="panel-surface rounded-[1.45rem] p-2">
+              <section className="rounded-[1.1rem] px-3 py-3">
+                <div className="mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                  <h2 className="text-sm font-semibold tracking-tight">Популярные статусы</h2>
                 </div>
-              )}
-            </section>
 
-            <section className="panel-surface rounded-[1.45rem] p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <Clock3 className="h-4 w-4 text-accent" />
-                <h2 className="text-sm font-semibold tracking-tight">Последние запросы</h2>
-              </div>
+                {loading ? (
+                  <LoadingText />
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {popularStatuses.map((status) => (
+                      <button
+                        key={`popular-${status.code}`}
+                        data-glow="action"
+                        type="button"
+                        onClick={() => applyQuery(status.code)}
+                        className="action-chip rounded-xl font-mono"
+                      >
+                        {status.code}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-              {recentQueries.length === 0 ? (
-                <p className="text-sm leading-6 text-muted-foreground">
-                  История появится после первых поисковых запросов.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {recentQueries.map((item) => (
-                    <button
-                      key={`recent-${item}`}
-                      data-glow="action"
-                      type="button"
-                      onClick={() => applyQuery(item)}
-                      className="action-chip rounded-xl"
-                    >
-                      {item}
-                    </button>
-                  ))}
+              <div className="mx-3 h-px bg-white/[0.05]" />
+
+              <section className="rounded-[1.1rem] px-3 py-3">
+                <div className="mb-3 flex items-center gap-2">
+                  <Clock3 className="h-4 w-4 text-accent" />
+                  <h2 className="text-sm font-semibold tracking-tight">Последние запросы</h2>
                 </div>
-              )}
-            </section>
+
+                {recentQueries.length === 0 ? (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    История появится после первых запросов.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {recentQueries.map((item) => (
+                      <button
+                        key={`recent-${item}`}
+                        data-glow="action"
+                        type="button"
+                        onClick={() => applyQuery(item)}
+                        className="action-chip rounded-xl"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           </aside>
         </div>
       </AmbientCursorGlow>

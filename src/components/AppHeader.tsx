@@ -1,6 +1,6 @@
 "use client";
 
-import { Grid2x2, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,8 +27,8 @@ export function AppHeader() {
   const isToolsActive = pathname?.startsWith("/tools");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/78 shadow-[0_12px_38px_hsl(243_48%_4%_/_0.18)] backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[4.35rem] lg:px-8">
+    <header className="sticky top-0 z-50 bg-background/72 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[4.25rem] lg:px-8">
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
@@ -36,7 +36,7 @@ export function AppHeader() {
                 variant="ghost"
                 size="icon"
                 aria-label="Открыть меню"
-                className="rounded-xl border border-transparent text-muted-foreground hover:border-border/70 hover:bg-card/70 hover:text-foreground"
+                className="rounded-xl text-muted-foreground hover:bg-card/45 hover:text-foreground"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -86,20 +86,15 @@ export function AppHeader() {
                 WMS Stats
               </span>
               <span className="text-[11px] text-muted-foreground">
-                Internal status lookup
+                Статусы WMS
               </span>
             </div>
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-[11px] text-muted-foreground md:flex">
-            <Grid2x2 className="h-3.5 w-3.5" />
-            WMS Knowledge Console
-          </div>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
       </div>
+      <div className="mx-auto h-px w-full max-w-[1440px] bg-gradient-to-r from-transparent via-white/[0.05] to-transparent px-4 sm:px-6 lg:px-8" />
     </header>
   );
 }
