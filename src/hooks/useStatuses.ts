@@ -18,21 +18,22 @@ export function useStatuses() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("/api/statuses", {
+
+        const response = await fetch("/api/statuses", {
           headers: { Accept: "application/json" },
         });
 
-        if (!res.ok) {
-          throw new Error(`Ошибка сети: ${res.status}`);
+        if (!response.ok) {
+          throw new Error(`Ошибка сети: ${response.status}`);
         }
 
-        const rawText = await res.text();
+        const rawText = await response.text();
         let data: unknown;
 
         try {
           data = rawText ? JSON.parse(rawText) : {};
-        } catch (parseError) {
-          throw new Error("Некорректный JSON от сервера");
+        } catch {
+          throw new Error("Сервер вернул некорректный JSON");
         }
 
         const rawStatuses = Array.isArray((data as { statuses?: unknown }).statuses)
@@ -42,8 +43,10 @@ export function useStatuses() {
         const normalized = rawStatuses
           .map((item) => {
             if (!item || typeof item !== "object") return null;
+
             const record = item as Record<string, unknown>;
-            const code = typeof record.code === "string" ? record.code : String(record.code ?? "");
+            const code =
+              typeof record.code === "string" ? record.code : String(record.code ?? "");
             const description =
               typeof record.description === "string"
                 ? record.description
@@ -54,6 +57,7 @@ export function useStatuses() {
                 : typeof record.action === "string"
                   ? record.action
                   : String(record.action);
+
             return { code, description, action };
           })
           .filter((value): value is Status => Boolean(value));
@@ -64,6 +68,7 @@ export function useStatuses() {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Неизвестная ошибка";
         console.error("Ошибка при загрузке статусов", err);
+
         if (isActive) {
           setError(message);
         }

@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/theme-provider";
+
 import "./globals.css";
 
-import { ThemeProvider } from "@/components/theme-provider";
-import ErrorBoundary from "@/components/ErrorBoundary";
+const geistSans = Geist({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
 
-const inter = Inter({ subsets: ["latin"] });
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
-  title: "RabbitHole Clone",
-  description: "A launchpad for your curiosity",
+  title: "WMS Stats",
+  description: "Internal lookup console for WMS status codes",
 };
 
 export default function RootLayout({
@@ -19,12 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ru"
       suppressHydrationWarning
-      className="transition-colors duration-500 ease-in-out"
+      className="transition-colors duration-300 ease-out"
     >
       <body
-        className={`${inter.className} transition-colors duration-500 ease-in-out`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans transition-colors duration-300 ease-out`}
       >
         <ThemeProvider
           attribute="class"
@@ -33,7 +42,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ErrorBoundary>
-            <div className="min-h-screen w-full bg-background transition-colors duration-500">
+            <div className="min-h-screen w-full bg-background text-foreground transition-colors duration-300">
               {children}
             </div>
           </ErrorBoundary>

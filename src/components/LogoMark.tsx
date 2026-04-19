@@ -10,7 +10,7 @@ type LogoMarkProps = {
 export function LogoMark({ className, variant = "default" }: LogoMarkProps) {
   const gradientId = useId();
   const baseClasses =
-    "[--logo-outer-start:#f7d8ff] [--logo-outer-mid:#e38cf8] [--logo-outer-end:#c257f0] [--logo-inner-start:#ffffff] [--logo-inner-mid:#f7d6ff] [--logo-inner-end:#e58bf9] [--logo-glow:#ffe0ff] dark:[--logo-outer-start:#2b0b40] dark:[--logo-outer-mid:#7a1fa2] dark:[--logo-outer-end:#f030a8] dark:[--logo-inner-start:#2d193f] dark:[--logo-inner-mid:#602b83] dark:[--logo-inner-end:#f45bbb] dark:[--logo-glow:#5d1e70]";
+    "[--logo-outer-start:#3b2f63] [--logo-outer-mid:#4f3d81] [--logo-outer-end:#6f57b0] [--logo-inner-start:#faf7ff] [--logo-inner-mid:#ddd6fe] [--logo-inner-end:#a78bfa] [--logo-glow:#c4b5fd] dark:[--logo-outer-start:#ede9fe] dark:[--logo-outer-mid:#c4b5fd] dark:[--logo-outer-end:#8b5cf6] dark:[--logo-inner-start:#1f1638] dark:[--logo-inner-mid:#37275f] dark:[--logo-inner-end:#8b5cf6] dark:[--logo-glow:#c4b5fd]";
 
   return (
     <svg
