@@ -1,307 +1,310 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useState, useMemo } from "react";
+import {
+  Barcode,
+  Copy,
+  Check,
+  Trash2,
+  Download,
+} from "lucide-react";
+
 import { AppHeader } from "@/components/AppHeader";
+import { AntigravityCanvas } from "@/components/AntigravityCanvas";
+import { AntigravityProvider, useAntigravity } from "@/components/AntigravityContext";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { parseIds } from "@/lib/extractor";
 
-const MODE_OPTIONS = [
-  { value: "sku" as const, label: "ШК" },
-  { value: "sticker" as const, label: "Стикер" },
-];
+function SeparatorToolContent() {
+  const [inputText, setInputText] = useState("");
+  const [delimiter, setDelimiter] = useState<string>("newline");
+  const [customDelimiter, setCustomDelimiter] = useState(",");
+  const [removeDuplicates, setRemoveDuplicates] = useState(true);
+  const [removeEmpty] = useState(true);
+  const [trimWhitespace] = useState(true);
+  const [onlyNumbers, setOnlyNumbers] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { hapticPulse } = useAntigravity();
 
-interface ToastState {
-  id: number;
-  message: string;
+
+  // Processing logic
+  const processedResult = useMemo(() => {
+    if (!inputText) return { items: [], text: "", stats: { total: 0, unique: 0, removed: 0 } };
+
+    // Split input by lines, tabs, commas, spaces
+    let rawItems = inputText
+      .split(/[\r\n,;\t]+/)
+      .map((item) => (trimWhitespace ? item.trim() : item));
+
+    if (onlyNumbers) {
+      rawItems = rawItems.map((item) => item.replace(/\D/g, "")).filter((item) => item.length > 0);
+    }
+
+    if (removeEmpty) {
+      rawItems = rawItems.filter((item) => item.length > 0);
+    }
+
+    const totalCount = rawItems.length;
+
+    let finalItems = rawItems;
+    if (removeDuplicates) {
+      finalItems = Array.from(new Set(rawItems));
+    }
+
+    let joinStr = "\n";
+    if (delimiter === "comma") joinStr = ", ";
+    else if (delimiter === "semicolon") joinStr = "; ";
+    else if (delimiter === "space") joinStr = " ";
+    else if (delimiter === "tab") joinStr = "\t";
+    else if (delimiter === "custom") joinStr = customDelimiter || " ";
+
+    return {
+      items: finalItems,
+      text: finalItems.join(joinStr),
+      stats: {
+        total: totalCount,
+        unique: finalItems.length,
+        removed: totalCount - finalItems.length,
+      },
+    };
+  }, [inputText, delimiter, customDelimiter, removeDuplicates, removeEmpty, trimWhitespace, onlyNumbers]);
+
+  const handleCopy = async () => {
+    if (!processedResult.text) return;
+    try {
+      await navigator.clipboard.writeText(processedResult.text);
+      setCopied(true);
+      hapticPulse(1.5);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleDownload = () => {
+    if (!processedResult.text) return;
+    const blob = new Blob([processedResult.text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wms_barcodes_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    hapticPulse(1);
+  };
+
+  return (
+    <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/25">
+      <AntigravityCanvas />
+      <AppHeader />
+
+      <main className="relative z-10 mx-auto w-full max-w-[1440px] px-4 pb-20 pt-8 sm:px-6 lg:px-8 lg:pt-10">
+        <div className="flex flex-col gap-8">
+          {/* Header */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-[11px] font-mono font-semibold text-primary border border-primary/20">
+                <Barcode className="h-3.5 w-3.5" />
+                QUANTUM EXTRACTOR
+              </span>
+              <span className="text-xs font-mono text-muted-foreground">WMS Batch Processing</span>
+            </div>
+
+            <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
+              Выделитель ШК / Стикеров
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
+              Автоматическая нормализация, очистка от лишних символов, дедупликация и форматирование штрихкодов из любых отчётов и таблиц.
+            </p>
+          </div>
+
+          {/* Quick Options Toolbar */}
+          <div className="antigravity-card flex flex-wrap items-center justify-between gap-4 rounded-3xl p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-mono font-semibold text-muted-foreground uppercase mr-1">
+                Разделитель:
+              </span>
+              {[
+                { id: "newline", label: "Новая строка (\\n)" },
+                { id: "comma", label: "Запятая (,)" },
+                { id: "semicolon", label: "Точка с запятой (;)" },
+                { id: "space", label: "Пробел" },
+                { id: "custom", label: "Свой..." },
+              ].map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => {
+                    setDelimiter(d.id);
+                    hapticPulse(0.5);
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    delimiter === d.id
+                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                      : "bg-background/60 text-muted-foreground hover:text-foreground border border-border"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+
+              {delimiter === "custom" && (
+                <input
+                  type="text"
+                  value={customDelimiter}
+                  onChange={(e) => setCustomDelimiter(e.target.value)}
+                  placeholder="Символ"
+                  className="h-8 w-20 rounded-full border border-border bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRemoveDuplicates(!removeDuplicates)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-all ${
+                  removeDuplicates
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-semibold"
+                    : "bg-background/60 border-border text-muted-foreground"
+                }`}
+              >
+                {removeDuplicates ? "✓ Без дубликатов" : "С дубликатами"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOnlyNumbers(!onlyNumbers)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-all ${
+                  onlyNumbers
+                    ? "bg-purple-500/15 border-purple-500/30 text-purple-400 font-semibold"
+                    : "bg-background/60 border-border text-muted-foreground"
+                }`}
+              >
+                {onlyNumbers ? "✓ Только цифры (ШК)" : "Все символы"}
+              </button>
+            </div>
+          </div>
+
+          {/* Dual Terminals: Input & Output */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Input Terminal */}
+            <div className="antigravity-card flex flex-col rounded-3xl p-6">
+              <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-blue-500" />
+                  <span className="text-sm font-mono font-semibold text-foreground">
+                    Исходные данные (Raw Input)
+                  </span>
+                </div>
+                {inputText && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setInputText("");
+                      hapticPulse(1);
+                    }}
+                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    Очистить
+                  </Button>
+                )}
+              </div>
+
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Вставьте сюда список штрихкодов, стикеров или скопированные столбцы из Excel / 1C / WMS..."
+                rows={14}
+                className="mt-4 w-full flex-1 resize-none rounded-2xl bg-background/50 border border-border/60 p-4 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+
+              <div className="mt-4 flex items-center justify-between text-xs font-mono text-muted-foreground">
+                <span>Строк: {inputText ? inputText.split("\n").length : 0}</span>
+                <span>Символов: {inputText.length}</span>
+              </div>
+            </div>
+
+            {/* Output Terminal */}
+            <div className="antigravity-card flex flex-col rounded-3xl p-6">
+              <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-mono font-semibold text-foreground">
+                    Результат обработки (Cleaned Output)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={!processedResult.text}
+                    className="h-8 rounded-full text-xs font-mono"
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                    .TXT
+                  </Button>
+
+                  <Button
+                    variant={copied ? "default" : "quantum"}
+                    size="sm"
+                    onClick={handleCopy}
+                    disabled={!processedResult.text}
+                    className="h-8 rounded-full text-xs font-mono"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-1.5 h-3.5 w-3.5" />
+                        Скопировано!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                        Копировать
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <textarea
+                readOnly
+                value={processedResult.text}
+                placeholder="Здесь появятся отформатированные и очищенные штрихкоды..."
+                rows={14}
+                className="mt-4 w-full flex-1 resize-none rounded-2xl bg-background/50 border border-border/60 p-4 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none select-all"
+              />
+
+              {/* Stats Bar */}
+              <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-background/40 p-3 text-center border border-border/40 font-mono text-xs">
+                <div>
+                  <span className="text-muted-foreground">Всего: </span>
+                  <span className="font-bold text-foreground">{processedResult.stats.total}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Уникальных: </span>
+                  <span className="font-bold text-emerald-400">{processedResult.stats.unique}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Удалено дублей: </span>
+                  <span className="font-bold text-purple-400">{processedResult.stats.removed}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
 
 export default function SeparatorPage() {
-  const [mode, setMode] = useState<(typeof MODE_OPTIONS)[number]["value"]>("sku");
-  const [unique, setUnique] = useState(true);
-  const [raw, setRaw] = useState("");
-  const [result, setResult] = useState<string[]>([]);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const [hasProcessed, setHasProcessed] = useState(false);
-  const [lastProcessedRaw, setLastProcessedRaw] = useState("");
-
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const resultRef = useRef<HTMLTextAreaElement | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const resultCount = result.length;
-  const resultTitle = useMemo(() => {
-    const label = mode === "sku" ? "ШК" : "Стикер";
-    return `Результат (${label}): ${resultCount}`;
-  }, [mode, resultCount]);
-
-  const showToast = useCallback((message: string) => {
-    if (toastTimer.current) {
-      clearTimeout(toastTimer.current);
-    }
-
-    const nextToast = { id: Date.now(), message };
-    setToast(nextToast);
-    toastTimer.current = setTimeout(() => {
-      setToast((current) => (current?.id === nextToast.id ? null : current));
-    }, 2200);
-  }, []);
-
-  const processInput = useCallback(
-    (input: string, { notify }: { notify: boolean }) => {
-      const trimmed = input.trim();
-      if (!trimmed) {
-        setResult([]);
-        if (notify) {
-          showToast("Готово: 0 записей");
-        }
-        return 0;
-      }
-
-      const parsed = parseIds(input, { mode, unique });
-
-      setResult(parsed);
-
-      if (notify) {
-        showToast(`Готово: ${parsed.length} записей`);
-      }
-
-      return parsed.length;
-    },
-    [mode, showToast, unique]
-  );
-
-  const handleProcess = useCallback(() => {
-    processInput(raw, { notify: true });
-    setLastProcessedRaw(raw);
-    setHasProcessed(true);
-  }, [processInput, raw]);
-
-  const handlePaste = useCallback(async () => {
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.readText) {
-        showToast("Не удалось получить доступ к буферу обмена");
-        return;
-      }
-
-      const text = await navigator.clipboard.readText();
-      if (text !== undefined) {
-        setRaw(text);
-        requestAnimationFrame(() => {
-          inputRef.current?.focus();
-          inputRef.current?.setSelectionRange(text.length, text.length);
-        });
-        showToast("Данные вставлены");
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("Не удалось получить данные из буфера обмена");
-    }
-  }, [showToast]);
-
-  const handleCopy = useCallback(async () => {
-    const content = result.join("\n");
-    if (!content) {
-      showToast("Нет данных для копирования");
-      return;
-    }
-
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.writeText) {
-        showToast("Скопируйте данные вручную");
-        return;
-      }
-
-      await navigator.clipboard.writeText(content);
-      showToast("Скопировано");
-    } catch (error) {
-      console.error(error);
-      showToast("Не удалось скопировать данные");
-    }
-  }, [result, showToast]);
-
-  const handleDownload = useCallback(() => {
-    const content = result.join("\n");
-    if (!content) {
-      showToast("Нет данных для сохранения");
-      return;
-    }
-
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = mode === "sku" ? "skus.txt" : "stickers.txt";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [mode, result, showToast]);
-
-  useEffect(() => {
-    if (!hasProcessed) return;
-    if (raw !== lastProcessedRaw) return;
-
-    processInput(lastProcessedRaw, { notify: false });
-  }, [hasProcessed, lastProcessedRaw, processInput, mode, unique, raw]);
-
-  useEffect(() => {
-    if (!lastProcessedRaw) return;
-    if (raw !== lastProcessedRaw) {
-      setHasProcessed(false);
-    }
-  }, [raw, lastProcessedRaw]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
-      const target = event.target as HTMLElement | null;
-      const isEditableTarget =
-        !!target &&
-        (target.isContentEditable ||
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA");
-      const isInputFocused = target === inputRef.current;
-      const isResultFocused = target === resultRef.current;
-
-      if (event.ctrlKey && key === "enter") {
-        event.preventDefault();
-        handleProcess();
-        return;
-      }
-
-      if (event.ctrlKey && key === "v") {
-        if (!isEditableTarget || isInputFocused) {
-          event.preventDefault();
-          handlePaste();
-        }
-        return;
-      }
-
-      if (event.ctrlKey && key === "c") {
-        if (!isEditableTarget || isResultFocused) {
-          event.preventDefault();
-          handleCopy();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleCopy, handlePaste, handleProcess]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current) {
-        clearTimeout(toastTimer.current);
-      }
-    };
-  }, []);
-
   return (
-    <div className="relative min-h-screen bg-background pb-16 pt-28 text-foreground">
-      <AppHeader />
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6">
-        <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">Выделитель ШК/Стикера</h1>
-            <p className="text-sm text-muted-foreground">
-              Вставьте данные из отчёта, выберите режим и получите очищенный список.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-2 rounded-lg bg-muted p-1 text-sm">
-              {MODE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setMode(option.value)}
-                  className={cn(
-                    "rounded-md px-4 py-2 font-medium transition-colors",
-                    mode === option.value
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={unique}
-                onChange={(event) => setUnique(event.target.checked)}
-                className="h-4 w-4 rounded border border-border bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              Уникальные (с сохранением порядка)
-            </label>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="glass-surface flex flex-col gap-4 rounded-2xl p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Исходные данные</h2>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={handlePaste}
-                  className="h-9 bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
-                >
-                  Вставить из буфера
-                </Button>
-                <Button type="button" onClick={handleProcess} className="h-9 px-4 py-2 text-sm font-semibold">
-                  Очистить →
-                </Button>
-              </div>
-            </div>
-            <textarea
-              ref={inputRef}
-              value={raw}
-              onChange={(event) => setRaw(event.target.value)}
-              placeholder="Вставьте данные отчёта или списка..."
-              className="glass-field h-80 w-full resize-none rounded-lg px-4 py-3 font-mono text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--glass-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            />
-            <p className="text-xs text-muted-foreground">Подсказка: можно вставлять Ctrl+V</p>
-          </div>
-
-          <div className="glass-surface flex flex-col gap-4 rounded-2xl p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">{resultTitle}</h2>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={handleCopy}
-                  className="h-9 bg-muted px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/80"
-                >
-                  Копировать результат
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleDownload}
-                  className="h-9 px-4 py-2 text-sm font-semibold"
-                >
-                  Скачать .txt
-                </Button>
-              </div>
-            </div>
-            <textarea
-              ref={resultRef}
-              value={result.join("\n")}
-              readOnly
-              spellCheck={false}
-              className="glass-field h-80 w-full resize-none rounded-lg px-4 py-3 font-mono text-sm text-foreground opacity-95 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--glass-ring)]"
-            />
-          </div>
-        </div>
-      </div>
-
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-lg border border-border bg-popover px-4 py-2 text-sm text-popover-foreground shadow-lg">
-          {toast.message}
-        </div>
-      )}
-    </div>
+    <AntigravityProvider>
+      <SeparatorToolContent />
+    </AntigravityProvider>
   );
 }

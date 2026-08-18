@@ -1,24 +1,36 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  subsets: ["latin"],
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin", "cyrillic-ext"],
   variable: "--font-sans",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-mono",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "WMS Stats",
-  description: "Internal lookup console for WMS status codes",
+  title: "Google Antigravity // WMS Intelligence Console",
+  description: "Dynamic zero-gravity status lookup, quantum barcode & sticker parser, and warehouse intelligence system.",
 };
 
 export default function RootLayout({
@@ -30,10 +42,10 @@ export default function RootLayout({
     <html
       lang="ru"
       suppressHydrationWarning
-      className="transition-colors duration-300 ease-out"
+      className="dark transition-colors duration-500 ease-out"
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans transition-colors duration-300 ease-out`}
+        className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} font-sans transition-colors duration-500 ease-out`}
       >
         <ThemeProvider
           attribute="class"
@@ -42,7 +54,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ErrorBoundary>
-            <div className="min-h-screen w-full bg-background text-foreground transition-colors duration-300">
+            <div className="min-h-screen w-full bg-background text-foreground selection:bg-primary/25 selection:text-primary transition-colors duration-300">
               {children}
             </div>
           </ErrorBoundary>

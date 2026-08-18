@@ -1,56 +1,55 @@
 "use client";
 
 import React from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-type Props = {
+interface Props {
   children: React.ReactNode;
-};
+}
 
-type State = {
+interface State {
   hasError: boolean;
-  errorMessage: string | null;
-};
+  error: Error | null;
+}
 
-class ErrorBoundary extends React.Component<Props, State> {
-  state: State = {
-    hasError: false,
-    errorMessage: null,
-  };
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, errorMessage: error.message };
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("UI crash caught by ErrorBoundary", error, info);
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Antigravity Core Error:", error, errorInfo);
   }
 
-  handleReload = () => {
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
-  };
-
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
-        <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-6 text-center">
-          <h1 className="text-2xl font-semibold">Что-то пошло не так</h1>
-          <p className="text-sm text-muted-foreground">
-            Попробуйте обновить страницу. Если проблема повторяется, проверьте ввод или сеть.
-          </p>
-          {this.state.errorMessage && (
-            <p className="text-xs text-muted-foreground">
-              Детали: {this.state.errorMessage}
+        <div className="flex min-h-[50vh] flex-col items-center justify-center p-6 text-center">
+          <div className="antigravity-card flex max-w-md flex-col items-center gap-4 rounded-3xl p-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/15 text-destructive">
+              <AlertCircle className="h-7 w-7" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight">Ошибка модуля Antigravity</h2>
+            <p className="text-sm text-muted-foreground">
+              Произошла непредвиденная ошибка при обработке данных.
             </p>
-          )}
-          <button
-            type="button"
-            className="rounded-full border border-border px-4 py-2 text-sm transition hover:border-foreground/60"
-            onClick={this.handleReload}
-          >
-            Обновить страницу
-          </button>
+            <Button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              className="mt-2 inline-flex items-center gap-2 rounded-full px-6"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Перезапустить систему</span>
+            </Button>
+          </div>
         </div>
       );
     }

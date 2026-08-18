@@ -1,181 +1,159 @@
 "use client";
 
+import React, { useState } from "react";
+import { Check, Copy, Terminal } from "lucide-react";
 import { motion } from "framer-motion";
-import { Check, Copy } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import { useAntigravity } from "@/components/AntigravityContext";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Status } from "@/hooks/useStatuses";
-import { copyPlainText, writePlainTextClipboardData } from "@/lib/clipboard";
-import { getStatusCodeCopyText, getStatusTextCopyText } from "@/lib/statusCopy";
+
+export interface WMSStatus {
+  id: string;
+  code: string;
+  category: string;
+  description: string;
+  action: string;
+  badgeType?: "blue" | "yellow" | "purple" | "cyan" | "green" | "red";
+  priority?: "high" | "normal" | "low";
+}
 
 interface Props {
-  status: Status;
-  query: string;
-  index?: number;
+  status: WMSStatus;
+  index: number;
 }
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+export function StatusCard({ status, index }: Props) {
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedFull, setCopiedFull] = useState(false);
+  const { zeroG, hapticPulse } = useAntigravity();
 
-function highlight(text: string, query: string) {
-  const safeText = text ?? "";
-  const trimmedQuery = query.trim();
-  if (!trimmedQuery) return safeText;
-
-  const escapedQuery = escapeRegExp(trimmedQuery);
-  const splitRegex = new RegExp(`(${escapedQuery})`, "gi");
-  const lowerQuery = trimmedQuery.toLowerCase();
-
-  return safeText.split(splitRegex).map((part, index) =>
-    part.toLowerCase() === lowerQuery ? (
-      <span key={index} className="rounded bg-accent/16 px-0.5 text-foreground">
-        {part}
-      </span>
-    ) : (
-      part
-    )
-  );
-}
-
-export default function StatusCard({ status, query, index = 0 }: Props) {
-  const [copied, setCopied] = useState<"code" | "text" | null>(null);
-
-  const copyCodeText = useMemo(() => getStatusCodeCopyText(status.code ?? ""), [status.code]);
-  const copyStatusText = useMemo(() => getStatusTextCopyText(status), [status]);
-
-  const triggerCopiedState = (value: "code" | "text") => {
-    setCopied(value);
-    window.setTimeout(() => setCopied(null), 1200);
-  };
-
-  const handleCopyCode = async () => {
-    const copiedCode = await copyPlainText(copyCodeText);
-    if (copiedCode) {
-      triggerCopiedState("code");
+  const handleCopyCode = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(status.code);
+      setCopiedCode(true);
+      hapticPulse(1.5);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      // fallback
     }
   };
 
-  const handleCopyText = async () => {
-    const copiedText = await copyPlainText(copyStatusText);
-    if (copiedText) {
-      triggerCopiedState("text");
+  const handleCopyFull = async () => {
+    try {
+      const text = `[WMS Статус ${status.code}] ${status.category}\nОписание: ${status.description}\nДействие ТСД: ${status.action}`;
+      await navigator.clipboard.writeText(text);
+      setCopiedFull(true);
+      hapticPulse(2);
+      setTimeout(() => setCopiedFull(false), 2000);
+    } catch {
+      // fallback
     }
   };
 
-  const handleManualCopy = (event: React.ClipboardEvent<HTMLElement>) => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
-
-    const { anchorNode, focusNode } = selection;
-    if (
-      (anchorNode && !event.currentTarget.contains(anchorNode)) ||
-      (focusNode && !event.currentTarget.contains(focusNode))
-    ) {
-      return;
-    }
-
-    if (writePlainTextClipboardData(event.clipboardData, selection.toString())) {
-      event.preventDefault();
-    }
+  const getBadgeClass = (category: string) => {
+    if (category.includes("Брак")) return "badge-red";
+    if (category.includes("Отгруз")) return "badge-green";
+    if (category.includes("Сбор") || category.includes("Возврат")) return "badge-yellow";
+    if (category.includes("Упаков") || category.includes("Инвент")) return "badge-purple";
+    if (category.includes("Сортиров") || category.includes("Хран")) return "badge-cyan";
+    return "badge-blue";
   };
 
   return (
-    <motion.article
-      onCopyCapture={handleManualCopy}
-      initial={{ opacity: 0, y: 12 }}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.24, delay: Math.min(index * 0.04, 0.2) }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.3) }}
+      className={`group relative flex flex-col justify-between rounded-3xl p-6 antigravity-card ${
+        zeroG ? "antigravity-floating" : ""
+      }`}
+      style={{
+        animationDelay: `${(index % 5) * 0.7}s`,
+      }}
     >
-      <Card
-        data-glow="base"
-        className="panel-surface interactive-surface group overflow-hidden rounded-[1.45rem] border-border/60"
-      >
-        <CardContent className="p-0">
-          <div className="relative flex flex-col gap-5 p-5 sm:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Status
-                </p>
-                <div className="mt-2 flex items-end gap-3">
-                  <h3 className="font-mono text-[2rem] font-semibold tracking-[-0.05em] text-foreground sm:text-[2.35rem]">
-                    {highlight(status.code, query)}
-                  </h3>
-                </div>
-              </div>
+      {/* Top Laser Accent on Hover */}
+      <div className="absolute inset-x-8 top-0 h-[2px] opacity-0 group-hover:opacity-100 google-laser-gradient transition-opacity duration-300 rounded-full" />
 
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <button
-                  data-glow="action"
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="action-chip"
-                  aria-label="Скопировать код статуса"
-                >
-                  {copied === "code" ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                  {copied === "code" ? "Скопировано" : "Код"}
-                </button>
-
-                <button
-                  data-glow="action"
-                  type="button"
-                  onClick={handleCopyText}
-                  className="action-chip"
-                  aria-label="Скопировать текст статуса"
-                >
-                  {copied === "text" ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                  {copied === "text" ? "Скопировано" : "Текст"}
-                </button>
-              </div>
+      <div>
+        {/* Card Header: Code Badge + Category */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Monospace Code Pill with copy action */}
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            className="group/code relative flex items-center gap-2 rounded-2xl bg-card px-3.5 py-1.5 border border-border/80 text-foreground font-mono font-bold text-lg sm:text-xl transition-all hover:border-primary hover:shadow-[0_0_15px_rgba(66,133,244,0.3)] active:scale-95"
+            title="Нажмите, чтобы скопировать код"
+          >
+            <span className="text-primary font-mono">#</span>
+            <span>{status.code}</span>
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary opacity-60 group-hover/code:opacity-100 transition-opacity">
+              {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <section className="content-panel rounded-[1.15rem] p-4 sm:p-5">
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  Описание
-                </p>
-                <p className="text-sm leading-7 text-foreground/92">
-                  {highlight(status.description, query)}
-                </p>
-              </section>
+            {copiedCode && (
+              <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-sans font-bold text-white shadow-md animate-in fade-in zoom-in-95">
+                Скопировано!
+              </span>
+            )}
+          </button>
 
-              <section className="content-panel rounded-[1.15rem] p-4 sm:p-5">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    Действия
-                  </p>
-                  {copied && (
-                    <span className="text-[11px] text-accent">
-                      Буфер обновлен
-                    </span>
-                  )}
-                </div>
+          {/* Category Chip */}
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getBadgeClass(status.category)}`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+            {status.category}
+          </span>
+        </div>
 
-                {status.action ? (
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    {highlight(status.action, query)}
-                  </p>
-                ) : (
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    Для этого статуса нет отдельного описания действий.
-                  </p>
-                )}
-              </section>
-            </div>
+        {/* Description Section */}
+        <div className="mt-5">
+          <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">
+            Описание операции
+          </h3>
+          <p className="mt-1.5 text-sm sm:text-[15px] font-normal leading-relaxed text-foreground/90">
+            {status.description}
+          </p>
+        </div>
+
+        {/* Action / Procedure Section */}
+        <div className="mt-4 rounded-2xl bg-background/50 border border-border/60 p-3.5 backdrop-blur-sm">
+          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-primary">
+            <Terminal className="h-3.5 w-3.5" />
+            <span>Регламент ТСД / Действие:</span>
           </div>
-        </CardContent>
-      </Card>
-    </motion.article>
+          <p className="mt-1 text-xs sm:text-sm leading-relaxed text-muted-foreground">
+            {status.action}
+          </p>
+        </div>
+      </div>
+
+      {/* Card Footer: Fast Copy & Telemetry */}
+      <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/40">
+        <span className="text-[11px] font-mono text-muted-foreground/60">
+          ID: {status.id}
+        </span>
+
+        <button
+          type="button"
+          onClick={handleCopyFull}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+        >
+          {copiedFull ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="text-emerald-400 font-semibold">Регламент скопирован</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5" />
+              <span>Копировать всё</span>
+            </>
+          )}
+        </button>
+      </div>
+    </motion.div>
   );
 }
+
+export default StatusCard;

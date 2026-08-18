@@ -1,27 +1,33 @@
+"use client";
+
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--glass-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_0_0_1px_hsl(0_0%_0%_/_0.08),0_2px_2px_hsl(0_0%_0%_/_0.04)] hover:bg-primary/90",
-        secondary:
-          "bg-secondary text-secondary-foreground shadow-[0_0_0_1px_hsl(var(--border))] hover:bg-secondary/80",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md hover:shadow-primary/20",
+        destructive:
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "bg-background text-foreground shadow-[0_0_0_1px_hsl(var(--border)),0_2px_2px_hsl(0_0%_0%_/_0.04)] hover:bg-muted",
-        ghost: "bg-transparent text-foreground hover:bg-muted",
+          "border border-border/80 bg-background/60 backdrop-blur-md hover:bg-accent/10 hover:text-accent hover:border-accent/40 shadow-xs",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost: "hover:bg-accent/10 hover:text-accent",
+        link: "text-primary underline-offset-4 hover:underline",
+        quantum:
+          "google-laser-gradient text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02]",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 px-3",
-        lg: "h-11 px-6",
-        icon: "h-10 w-10",
+        default: "h-10 px-5 py-2",
+        sm: "h-8 rounded-full px-3 text-xs",
+        lg: "h-12 rounded-full px-8 text-base",
+        icon: "h-10 w-10 rounded-full",
       },
     },
     defaultVariants: {
@@ -49,7 +55,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
   }
 );
-
 Button.displayName = "Button";
 
 export { Button, buttonVariants };

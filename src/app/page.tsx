@@ -1,266 +1,278 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Clock3, FolderTree, TrendingUp } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Search } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-import AmbientCursorGlow from "@/components/AmbientCursorGlow";
 import { AppHeader } from "@/components/AppHeader";
-import InputSearch from "@/components/InputSearch";
-import SearchResults from "@/components/SearchResults";
-import StatusCard from "@/components/StatusCard";
-import LoadingText from "@/components/ui/loading-text";
-import { useSearch } from "@/hooks/useSearch";
+import { InputSearch } from "@/components/InputSearch";
+import { StatusCard, type WMSStatus } from "@/components/StatusCard";
+import { AntigravityCanvas } from "@/components/AntigravityCanvas";
+import { AntigravityProvider, useAntigravity } from "@/components/AntigravityContext";
+import { Button } from "@/components/ui/button";
 
-const RECENT_QUERIES_KEY = "wms-stats:recent-queries";
+function AntigravityHomeContent() {
+  const [statuses, setStatuses] = useState<WMSStatus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Все");
+  const [sourceInfo, setSourceInfo] = useState("Antigravity Engine");
+  const { zeroG, hapticPulse } = useAntigravity();
 
-const QUICK_CATEGORIES = [
-  { label: "Приемка", query: "приемка", hint: "Поступление и оприходование" },
-  { label: "Упаковка", query: "упаковка", hint: "Переупаковка и контроль" },
-  { label: "Сборка", query: "сборка", hint: "Подбор и маршруты отбора" },
-  { label: "Сортировка", query: "сортировка", hint: "Потоки и направления" },
-  { label: "Инвентаризация", query: "инвентаризация", hint: "Остатки и ячейки" },
-  { label: "Брак", query: "брак", hint: "Дефекты и возвраты" },
-];
-
-function uniqueStatusesByCode<T extends { code: string }>(items: T[]) {
-  const seen = new Set<string>();
-
-  return items.filter((item) => {
-    const normalized = (item.code ?? "").trim().toUpperCase();
-    if (!normalized || seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-}
-
-export default function Home() {
-  const { query, setQuery, clear, results, statuses, loading, error } = useSearch();
-  const [recentQueries, setRecentQueries] = useState<string[]>([]);
-
-  const hasQuery = query.trim().length > 0;
-  const hasResults = results.length > 0;
-
-  const popularStatuses = useMemo(
-    () => uniqueStatusesByCode(statuses).slice(0, 8),
-    [statuses]
-  );
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(RECENT_QUERIES_KEY);
-      if (!raw) return;
-
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        setRecentQueries(parsed.filter((value) => typeof value === "string").slice(0, 6));
+    async function loadStatuses() {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/statuses");
+        if (res.ok) {
+          const data = await res.json();
+          setStatuses(data.statuses || []);
+          if (data.source) setSourceInfo(data.source);
+        }
+      } catch (err) {
+        console.error("Failed to load statuses", err);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setRecentQueries([]);
     }
+    loadStatuses();
   }, []);
 
-  const registerRecentQuery = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    setRecentQueries((previous) => {
-      const next = [trimmed, ...previous.filter((item) => item !== trimmed)].slice(0, 6);
-
-      try {
-        window.localStorage.setItem(RECENT_QUERIES_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore localStorage write failures in restricted environments.
-      }
-
-      return next;
+  // Extract unique categories
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    statuses.forEach((s) => {
+      if (s.category) set.add(s.category);
     });
-  };
+    return ["Все", ...Array.from(set)];
+  }, [statuses]);
 
-  const applyQuery = (value: string) => {
-    setQuery(value);
-    registerRecentQuery(value);
-  };
+  // Filtered statuses
+  const filteredStatuses = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return statuses.filter((s) => {
+      const matchCat =
+        selectedCategory === "Все" || s.category.toLowerCase() === selectedCategory.toLowerCase();
+      if (!matchCat) return false;
+      if (!q) return true;
 
-  const submitCurrentQuery = () => {
-    registerRecentQuery(query);
-  };
+      return (
+        s.code.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.action.toLowerCase().includes(q)
+      );
+    });
+  }, [statuses, searchQuery, selectedCategory]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/25">
+      {/* Background Interactive Antigravity Canvas */}
+      <AntigravityCanvas />
+
       <AppHeader />
 
-      <AmbientCursorGlow className="mx-auto w-full max-w-[1440px] px-4 pb-12 pt-6 sm:px-6 lg:px-8 lg:pb-14 lg:pt-8">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
-          <section className="min-w-0 space-y-4 lg:space-y-5">
-            <div className="max-w-3xl space-y-2">
-              <h1 className="text-balance text-4xl font-semibold tracking-[-0.05em] text-gradient-soft sm:text-5xl">
-                Поиск статусов WMS
-              </h1>
-              <p className="text-sm text-muted-foreground sm:text-[15px]">
-                Введите статус или краткое описание статуса.
-              </p>
+      <main className="relative z-10 mx-auto w-full max-w-[1440px] px-4 pb-20 pt-8 sm:px-6 lg:px-8 lg:pt-12">
+        <div className="flex flex-col gap-10">
+          {/* Antigravity Hero Section */}
+          <div className="relative flex flex-col items-center text-center">
+            {/* Holographic Pill Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/60 px-4 py-1.5 backdrop-blur-xl shadow-[0_0_20px_rgba(66,133,244,0.15)]"
+            >
+              <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-primary">
+                Google Antigravity // WMS Core
+              </span>
+              <span className="text-xs text-muted-foreground/60">•</span>
+              <span className="font-mono text-xs text-muted-foreground">{sourceInfo}</span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-6 font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground"
+            >
+              Управление статусами в{" "}
+              <span className="google-laser-text">невесомости</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-4 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed font-normal"
+            >
+              Мгновенный поиск кодов операций склада, регламентов ТСД и автоматическая обработка штрихкодов в ультрадинамичной среде.
+            </motion.p>
+
+            {/* Search Input Bar */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+              className="mt-8 w-full"
+            >
+              <InputSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                totalMatches={filteredStatuses.length}
+              />
+            </motion.div>
+
+            {/* Dynamic Orbital Category Pills */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="mt-6 flex flex-wrap items-center justify-center gap-2 max-w-4xl"
+            >
+              {categories.map((category) => {
+                const isSelected = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      hapticPulse(1);
+                    }}
+                    className={`quantum-chip relative ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary font-semibold shadow-md shadow-primary/25"
+                        : "hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span>{category}</span>
+                    {category === "Все" && (
+                      <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.2 text-[10px] font-mono">
+                        {statuses.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Кодов в базе
+              </span>
+              <span className="font-mono text-2xl font-bold text-primary">{statuses.length}</span>
+              <span className="text-[11px] text-muted-foreground">Синхронизировано</span>
             </div>
 
-            <InputSearch
-              query={query}
-              onChange={setQuery}
-              onClear={clear}
-              onSubmit={submitCurrentQuery}
-            />
+            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Категорий
+              </span>
+              <span className="font-mono text-2xl font-bold text-foreground">
+                {categories.length - 1}
+              </span>
+              <span className="text-[11px] text-muted-foreground">Все зоны склада</span>
+            </div>
 
-            <AnimatePresence initial={false}>
-              {hasQuery && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground"
-                >
-                  <span className="rounded-full bg-background/28 px-3 py-1">
-                    Запрос: <span className="font-medium text-foreground">{query}</span>
-                  </span>
-                  {!loading && (
-                    <span className="rounded-full bg-background/28 px-3 py-1">
-                      Найдено: <span className="font-medium text-foreground">{results.length}</span>
-                    </span>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Отклик поиска
+              </span>
+              <span className="font-mono text-2xl font-bold text-emerald-400">&lt; 1ms</span>
+              <span className="text-[11px] text-muted-foreground">Instant Indexing</span>
+            </div>
 
-            {!hasQuery && (
-              <motion.section
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.24 }}
-                className="panel-surface rounded-[1.4rem] p-4 sm:p-5"
-              >
-                <div className="mb-4 flex items-center gap-2">
-                  <FolderTree className="h-4 w-4 text-accent" />
-                  <h2 className="text-sm font-semibold tracking-tight">Быстрые категории</h2>
-                </div>
+            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Физика Zero-G
+              </span>
+              <span className="font-mono text-2xl font-bold text-purple-400">
+                {zeroG ? "Активна" : "Пассивна"}
+              </span>
+              <span className="text-[11px] text-muted-foreground">Orbital Engine</span>
+            </div>
+          </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-                  {QUICK_CATEGORIES.map((category) => (
-                    <button
-                      key={category.label}
-                      data-glow="base"
-                      type="button"
-                      onClick={() => applyQuery(category.query)}
-                      className="content-panel interactive-surface group rounded-[1.15rem] p-4 text-left"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-medium text-foreground">
-                          {category.label}
-                        </span>
-                        <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/82">
-                          {category.query}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                        {category.hint}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {loading && hasQuery && (
-              <div className="pt-1">
-                <LoadingText />
+          {/* Results Grid / List */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">
+                  {selectedCategory === "Все" ? "Каталог статусов WMS" : `Статусы: ${selectedCategory}`}
+                </h2>
+                <span className="rounded-full bg-card px-2.5 py-0.5 text-xs font-mono text-muted-foreground border border-border">
+                  {filteredStatuses.length}
+                </span>
               </div>
-            )}
 
-            <SearchResults visible={hasQuery}>
-              {error && (
-                <div className="panel-surface rounded-[1.35rem] p-4 text-sm text-destructive">
-                  Ошибка загрузки: {error}
-                </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Сбросить поиск
+                </Button>
               )}
+            </div>
 
-              {!loading &&
-                results.map((status, index) => (
-                  <StatusCard
-                    key={`${status.code}-${status.description}-${index}`}
-                    status={status}
-                    query={query}
-                    index={index}
+            {loading ? (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="antigravity-card h-48 animate-pulse rounded-3xl p-6 opacity-60"
                   />
                 ))}
-
-              {!loading && hasQuery && !hasResults && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="panel-surface rounded-[1.4rem] p-6 text-sm text-muted-foreground"
+              </div>
+            ) : filteredStatuses.length > 0 ? (
+              <motion.div layout className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence mode="popLayout">
+                  {filteredStatuses.map((status, idx) => (
+                    <StatusCard key={status.id || status.code} status={status} index={idx} />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            ) : (
+              <div className="antigravity-card flex flex-col items-center justify-center rounded-3xl p-12 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-border text-muted-foreground">
+                  <Search className="h-8 w-8" />
+                </div>
+                <h3 className="mt-4 text-lg font-bold text-foreground">Ничего не найдено</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  По запросу &laquo;{searchQuery}&raquo; в категории &laquo;{selectedCategory}&raquo; ничего не найдено.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("Все");
+                  }}
+                  className="mt-4 rounded-full"
                 >
-                  Ничего не найдено. Попробуйте сократить запрос или ввести код статуса целиком.
-                </motion.div>
-              )}
-            </SearchResults>
-          </section>
-
-          <aside className="xl:sticky xl:top-24">
-            <div className="panel-surface rounded-[1.45rem] p-2">
-              <section className="rounded-[1.1rem] px-3 py-3">
-                <div className="mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-accent" />
-                  <h2 className="text-sm font-semibold tracking-tight">Популярные статусы</h2>
-                </div>
-
-                {loading ? (
-                  <LoadingText />
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {popularStatuses.map((status) => (
-                      <button
-                        key={`popular-${status.code}`}
-                        data-glow="action"
-                        type="button"
-                        onClick={() => applyQuery(status.code)}
-                        className="action-chip rounded-xl font-mono"
-                      >
-                        {status.code}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <div className="mx-3 h-px bg-white/[0.05]" />
-
-              <section className="rounded-[1.1rem] px-3 py-3">
-                <div className="mb-3 flex items-center gap-2">
-                  <Clock3 className="h-4 w-4 text-accent" />
-                  <h2 className="text-sm font-semibold tracking-tight">Последние запросы</h2>
-                </div>
-
-                {recentQueries.length === 0 ? (
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    История появится после первых запросов.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {recentQueries.map((item) => (
-                      <button
-                        key={`recent-${item}`}
-                        data-glow="action"
-                        type="button"
-                        onClick={() => applyQuery(item)}
-                        className="action-chip rounded-xl"
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
-          </aside>
+                  Сбросить все фильтры
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-      </AmbientCursorGlow>
-    </main>
+      </main>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AntigravityProvider>
+      <AntigravityHomeContent />
+    </AntigravityProvider>
   );
 }

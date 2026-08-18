@@ -1,113 +1,102 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { CornerDownLeft, Search, Slash, X } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
+import { Search, X } from "lucide-react";
+import { useAntigravity } from "@/components/AntigravityContext";
+
 
 interface Props {
-  query: string;
-  onChange: (value: string) => void;
-  onClear: () => void;
-  onSubmit?: () => void;
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  totalMatches?: number;
 }
 
-const InputSearch: React.FC<Props> = ({ query, onChange, onClear, onSubmit }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+export function InputSearch({
+  value,
+  onChange,
+  placeholder = "Поиск по коду операции, названию или действию...",
+  totalMatches,
+}: Props) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { hapticPulse } = useAntigravity();
 
+  // Keyboard shortcut '/' and 'Escape'
   useEffect(() => {
-    const handleSlashFocus = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTextField =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable;
-
-      if (!isTextField && event.key === "/") {
-        event.preventDefault();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
         inputRef.current?.focus();
+        hapticPulse(1);
+      } else if (e.key === "Escape" && document.activeElement === inputRef.current) {
+        if (value) {
+          onChange("");
+        } else {
+          inputRef.current?.blur();
+        }
       }
     };
 
-    window.addEventListener("keydown", handleSlashFocus);
-    return () => window.removeEventListener("keydown", handleSlashFocus);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [value, onChange, hapticPulse]);
 
   return (
-    <motion.section
-      data-glow="strong"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24 }}
-      className="panel-surface-strong console-shell relative rounded-[1.65rem] px-4 py-4 sm:px-5 sm:py-5 lg:px-6"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Поиск
-          </p>
-          <p className="text-sm text-muted-foreground sm:text-[15px]">
-            Введите статус или краткое описание статуса.
-          </p>
+    <div className="relative w-full max-w-3xl mx-auto group">
+      {/* Outer Floating Glow Aura */}
+      <div className="absolute -inset-1 rounded-full google-laser-gradient opacity-20 blur-xl group-hover:opacity-40 group-focus-within:opacity-75 transition-all duration-500" />
+
+      {/* Main Capsule Search Bar */}
+      <div className="antigravity-search-bar relative flex items-center gap-3 rounded-full px-5 py-3.5 shadow-2xl transition-all">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Search className="h-4 w-4 transition-transform group-hover:scale-110 group-focus-within:text-primary" />
         </div>
 
-        <div className="hidden items-center gap-1 rounded-full bg-background/30 px-2.5 py-1 text-[11px] text-muted-foreground md:flex">
-          <Slash className="h-3.5 w-3.5" />
-          Фокус
-        </div>
-      </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            hapticPulse(0.3);
+          }}
+          placeholder={placeholder}
+          className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
+        />
 
-      <div className="mt-4 rounded-[1.35rem] border border-white/[0.04] bg-black/10 p-2.5 shadow-[inset_0_1px_0_hsl(0_0%_100%_/_0.03)]">
-        <div className="relative rounded-[1.1rem] bg-background/34 shadow-[inset_0_1px_0_hsl(0_0%_100%_/_0.04)] transition-colors focus-within:bg-background/42">
-          <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-muted-foreground">
-            <Search className="h-4 w-4" />
-          </div>
+        {/* Dynamic Match Count Indicator */}
+        {value && totalMatches !== undefined && (
+          <span className="hidden sm:inline-flex items-center rounded-full bg-primary/15 px-2.5 py-1 text-xs font-mono font-medium text-primary border border-primary/20">
+            {totalMatches} {totalMatches === 1 ? "совпадение" : totalMatches > 1 && totalMatches < 5 ? "совпадения" : "найдено"}
+          </span>
+        )}
 
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Например: PAP, приемка, сортировка"
-            value={query}
-            onChange={(event) => onChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") onSubmit?.();
-              if (event.key === "Escape") onClear();
+        {/* Clear Button */}
+        {value ? (
+          <button
+            type="button"
+            onClick={() => {
+              onChange("");
+              inputRef.current?.focus();
+              hapticPulse(0.8);
             }}
-            className="h-14 w-full rounded-[1.1rem] border border-transparent bg-transparent px-12 py-4 pr-28 text-[15px] text-foreground placeholder:text-muted-foreground/80 focus-visible:border-accent/18 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/8 sm:h-16 sm:text-base"
-          />
-
-          <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
-            <div className="hidden items-center gap-1 rounded-lg bg-background/42 px-2 py-1 text-[11px] text-muted-foreground md:flex">
-              <CornerDownLeft className="h-3 w-3" />
-              Enter
-            </div>
-
-            <AnimatePresence initial={false}>
-              {query && (
-                <motion.button
-                  key="clear"
-                  data-glow="action"
-                  type="button"
-                  onClick={onClear}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  className="action-chip h-9 w-9 justify-center rounded-lg p-0"
-                  aria-label="Очистить поиск"
-                >
-                  <X className="h-4 w-4" />
-                </motion.button>
-              )}
-            </AnimatePresence>
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-card hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-all"
+            title="Очистить"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <div className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-muted-foreground/60 border border-border/80 rounded-lg px-2 py-0.5 bg-card/40">
+            <kbd>/</kbd>
           </div>
-        </div>
+        )}
       </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/88">
-        <span>/ фокус</span>
-        <span>Esc очистить</span>
-      </div>
-    </motion.section>
+    </div>
   );
-};
+}
 
 export default InputSearch;

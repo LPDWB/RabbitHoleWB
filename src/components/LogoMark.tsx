@@ -1,57 +1,74 @@
-import { useId } from "react";
+"use client";
 
-import { cn } from "@/lib/utils";
+import React from "react";
+import { motion } from "framer-motion";
 
-type LogoMarkProps = {
-  className?: string;
-  variant?: "default" | "square";
-};
-
-export function LogoMark({ className, variant = "default" }: LogoMarkProps) {
-  const gradientId = useId();
-  const baseClasses =
-    "[--logo-outer-start:#3b2f63] [--logo-outer-mid:#4f3d81] [--logo-outer-end:#6f57b0] [--logo-inner-start:#faf7ff] [--logo-inner-mid:#ddd6fe] [--logo-inner-end:#a78bfa] [--logo-glow:#c4b5fd] dark:[--logo-outer-start:#ede9fe] dark:[--logo-outer-mid:#c4b5fd] dark:[--logo-outer-end:#8b5cf6] dark:[--logo-inner-start:#1f1638] dark:[--logo-inner-mid:#37275f] dark:[--logo-inner-end:#8b5cf6] dark:[--logo-glow:#c4b5fd]";
-
+export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <svg
-      aria-hidden="true"
-      role="img"
-      viewBox="0 0 80 80"
-      className={cn("h-8 w-8 drop-shadow-sm", baseClasses, className)}
-    >
-      <defs>
-        <linearGradient id={`${gradientId}-outer`} x1="10" x2="70" y1="10" y2="70">
-          <stop offset="0%" stopColor="var(--logo-outer-start)" />
-          <stop offset="50%" stopColor="var(--logo-outer-mid)" />
-          <stop offset="100%" stopColor="var(--logo-outer-end)" />
-        </linearGradient>
-        <linearGradient id={`${gradientId}-inner`} x1="15" x2="65" y1="20" y2="60">
-          <stop offset="0%" stopColor="var(--logo-inner-start)" />
-          <stop offset="55%" stopColor="var(--logo-inner-mid)" />
-          <stop offset="100%" stopColor="var(--logo-inner-end)" />
-        </linearGradient>
-      </defs>
+    <div className={`relative flex items-center justify-center ${className}`}>
+      {/* Outer Orbital Rings */}
+      <svg
+        viewBox="0 0 40 40"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-full w-full drop-shadow-[0_0_12px_rgba(66,133,244,0.4)]"
+      >
+        {/* Antigravity Gravitational Torus / Orbit 1 */}
+        <motion.ellipse
+          cx="20"
+          cy="20"
+          rx="17"
+          ry="7"
+          stroke="url(#google-antigravity-grad1)"
+          strokeWidth="2.2"
+          strokeDasharray="4 2"
+          transform="rotate(-25 20 20)"
+          animate={{ rotate: [-25, 335] }}
+          transition={{ duration: 16, repeat: Infinity, ease: "linear" }}
+        />
 
-      <rect
-        x="8"
-        y="8"
-        width="64"
-        height="64"
-        rx={variant === "square" ? 14 : 18}
-        fill={`url(#${gradientId}-outer)`}
-      />
-      <path
-        d="M18 42.5c0-9.4 7.6-17 17-17h10c11 0 19 8 19 19 0 2.9-.6 5.6-1.7 8l-9.3-7.2c-.7-.5-1.6-.5-2.3 0l-7.1 5.6a5 5 0 0 1-6.3-.2L30.8 43a4 4 0 0 0-5.3.4l-7.5 7.1c-.8-2.2-1-4.8-1-8z"
-        fill={`url(#${gradientId}-inner)`}
-      />
-      <path
-        d="M28 55c1.6 2.9 6 5 12 5 7.5 0 13.8-3.7 16.5-9.2.6-1.2-.8-2.3-1.9-1.6-5.1 3.3-11.7 4.7-16.6 4.7-3.8 0-7.7-.9-10.7-2.8-.9-.5-1.8.7-1.3 1.8z"
-        fill="var(--logo-glow)"
-        opacity="0.7"
-      />
-      <circle cx="28" cy="30" r="5.5" fill="#ffffff" fillOpacity="0.75" />
-      <circle cx="50" cy="26" r="4.5" fill="#ffe5ff" fillOpacity="0.75" />
-      <circle cx="56" cy="36" r="3" fill="#ffffff" fillOpacity="0.65" />
-    </svg>
+        {/* Orbit 2 */}
+        <motion.ellipse
+          cx="20"
+          cy="20"
+          rx="17"
+          ry="7"
+          stroke="url(#google-antigravity-grad2)"
+          strokeWidth="2"
+          transform="rotate(35 20 20)"
+          animate={{ rotate: [35, -325] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Central Quantum Singularity Sphere */}
+        <circle cx="20" cy="20" r="5.5" fill="url(#core-grad)" />
+        <circle cx="18.5" cy="18.5" r="1.8" fill="#ffffff" opacity="0.85" />
+
+        {/* Google 4-Color Gradients */}
+        <defs>
+          <linearGradient id="google-antigravity-grad1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#4285F4" />
+            <stop offset="35%" stopColor="#EA4335" />
+            <stop offset="70%" stopColor="#FBBC05" />
+            <stop offset="100%" stopColor="#34A853" />
+          </linearGradient>
+
+          <linearGradient id="google-antigravity-grad2" x1="40" y1="0" x2="0" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#A855F7" />
+            <stop offset="50%" stopColor="#4285F4" />
+            <stop offset="100%" stopColor="#34A853" />
+          </linearGradient>
+
+          <radialGradient id="core-grad" cx="20" cy="20" r="6" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="35%" stopColor="#8AB4F8" />
+            <stop offset="70%" stopColor="#4285F4" />
+            <stop offset="100%" stopColor="#1A73E8" />
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
   );
 }
+
+export default LogoMark;
