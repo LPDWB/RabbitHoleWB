@@ -1,19 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Copy, Terminal } from "lucide-react";
+import { Check, Copy, Terminal, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAntigravity } from "@/components/AntigravityContext";
-
 
 export interface WMSStatus {
   id: string;
   code: string;
+  codes?: string[];
   category: string;
   description: string;
   action: string;
   badgeType?: "blue" | "yellow" | "purple" | "cyan" | "green" | "red";
   priority?: "high" | "normal" | "low";
+  count?: number;
 }
 
 interface Props {
@@ -22,17 +23,33 @@ interface Props {
 }
 
 export function StatusCard({ status, index }: Props) {
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [copiedAllCodes, setCopiedAllCodes] = useState(false);
   const [copiedFull, setCopiedFull] = useState(false);
   const { zeroG, hapticPulse } = useAntigravity();
 
-  const handleCopyCode = async (e: React.MouseEvent) => {
+  const codes = status.codes && status.codes.length > 0 ? status.codes : [status.code];
+  const isGrouped = codes.length > 1;
+
+  const handleCopyCode = async (e: React.MouseEvent, codeToCopy: string) => {
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(status.code);
-      setCopiedCode(true);
+      await navigator.clipboard.writeText(codeToCopy);
+      setCopiedCode(codeToCopy);
       hapticPulse(1.5);
-      setTimeout(() => setCopiedCode(false), 2000);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleCopyAllCodes = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(codes.join(", "));
+      setCopiedAllCodes(true);
+      hapticPulse(1.8);
+      setTimeout(() => setCopiedAllCodes(false), 2000);
     } catch {
       // fallback
     }
@@ -40,7 +57,8 @@ export function StatusCard({ status, index }: Props) {
 
   const handleCopyFull = async () => {
     try {
-      const text = `[WMS Статус ${status.code}] ${status.category}\nОписание: ${status.description}\nДействие ТСД: ${status.action}`;
+      const codeLabel = isGrouped ? `Статусы: ${codes.join(", ")}` : `Статус ${codes[0]}`;
+      const text = `[WMS ${codeLabel}] ${status.category}\nОписание: ${status.description}\nДействие ТСД: ${status.action}`;
       await navigator.clipboard.writeText(text);
       setCopiedFull(true);
       hapticPulse(2);
@@ -77,30 +95,55 @@ export function StatusCard({ status, index }: Props) {
       <div className="absolute inset-x-8 top-0 h-[2px] opacity-0 group-hover:opacity-100 google-laser-gradient transition-opacity duration-300 rounded-full" />
 
       <div>
-        {/* Card Header: Code Badge + Category */}
-        <div className="flex items-center justify-between gap-3">
-          {/* Monospace Code Pill with copy action */}
-          <button
-            type="button"
-            onClick={handleCopyCode}
-            className="group/code relative flex items-center gap-2 rounded-2xl bg-card px-3.5 py-1.5 border border-border/80 text-foreground font-mono font-bold text-lg sm:text-xl transition-all hover:border-primary hover:shadow-[0_0_15px_rgba(66,133,244,0.3)] active:scale-95"
-            title="Нажмите, чтобы скопировать код"
-          >
-            <span className="text-primary font-mono">#</span>
-            <span>{status.code}</span>
-            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary opacity-60 group-hover/code:opacity-100 transition-opacity">
-              {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            </div>
+        {/* Card Header: Codes + Category */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Status Code(s) Pill with copy action */}
+          <div className="flex flex-wrap items-center gap-2">
+            {codes.map((code) => {
+              const isCopied = copiedCode === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={(e) => handleCopyCode(e, code)}
+                  className={`group/code relative flex items-center gap-2 rounded-2xl bg-card px-3.5 py-1.5 border transition-all hover:border-primary hover:shadow-[0_0_15px_rgba(66,133,244,0.3)] active:scale-95 ${
+                    isGrouped ? "text-base font-mono font-bold" : "text-lg sm:text-xl font-mono font-bold"
+                  } ${isCopied ? "border-emerald-500 text-emerald-400" : "border-border/80 text-foreground"}`}
+                  title={`Нажмите, чтобы скопировать статус #${code}`}
+                >
+                  <span className="text-primary font-mono">#</span>
+                  <span>{code}</span>
+                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary opacity-60 group-hover/code:opacity-100 transition-opacity">
+                    {isCopied ? (
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </div>
 
-            {copiedCode && (
-              <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-sans font-bold text-white shadow-md animate-in fade-in zoom-in-95">
-                Скопировано!
+                  {isCopied && (
+                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-sans font-bold text-white shadow-md animate-in fade-in zoom-in-95 z-20 whitespace-nowrap">
+                      Скопировано!
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {isGrouped && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-mono font-semibold text-primary border border-primary/20">
+                <Layers className="h-3 w-3" />
+                {codes.length} статуса
               </span>
             )}
-          </button>
+          </div>
 
           {/* Category Chip */}
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getBadgeClass(status.category)}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getBadgeClass(
+              status.category
+            )}`}
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
             {status.category}
           </span>
@@ -128,16 +171,36 @@ export function StatusCard({ status, index }: Props) {
         </div>
       </div>
 
-      {/* Card Footer: Fast Copy & Telemetry */}
-      <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/40">
-        <span className="text-[11px] font-mono text-muted-foreground/60">
-          ID: {status.id}
-        </span>
+      {/* Card Footer: Fast Copy & Actions */}
+      <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/40 gap-2">
+        {isGrouped ? (
+          <button
+            type="button"
+            onClick={handleCopyAllCodes}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            {copiedAllCodes ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-emerald-400 font-semibold">Все коды скопированы</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Скопировать все ({codes.join(", ")})</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <span className="text-[11px] font-mono text-muted-foreground/60">
+            ID: {status.id}
+          </span>
+        )}
 
         <button
           type="button"
           onClick={handleCopyFull}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors ml-auto"
         >
           {copiedFull ? (
             <>
@@ -147,7 +210,7 @@ export function StatusCard({ status, index }: Props) {
           ) : (
             <>
               <Copy className="h-3.5 w-3.5" />
-              <span>Копировать всё</span>
+              <span>Копировать регламент</span>
             </>
           )}
         </button>

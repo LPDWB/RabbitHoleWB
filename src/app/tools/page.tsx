@@ -12,7 +12,7 @@ import { AntigravityProvider } from "@/components/AntigravityContext";
 const tools = [
   {
     title: "Статусы WMS",
-    description: "Мгновенная расшифровка кодов складских операций с подробными инструкциями для операторов ТСД и ревизоров.",
+    description: "Мгновенная расшифровка статусов складских операций с подробными инструкциями для операторов ТСД и ревизоров.",
     href: "/",
     icon: Compass,
     badge: "Основной модуль",

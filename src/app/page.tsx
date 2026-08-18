@@ -16,7 +16,7 @@ function AntigravityHomeContent() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Все");
-  const { zeroG, hapticPulse } = useAntigravity();
+  const { hapticPulse } = useAntigravity();
 
   useEffect(() => {
     async function loadStatuses() {
@@ -45,44 +45,75 @@ function AntigravityHomeContent() {
     return ["Все", ...Array.from(set)];
   }, [statuses]);
 
+  // Automatically group statuses with identical description & action logic
+  const groupedStatuses = useMemo(() => {
+    const map = new Map<string, WMSStatus>();
+
+    for (const s of statuses) {
+      const normDesc = (s.description || "").trim().toLowerCase().replace(/\s+/g, " ");
+      const normAction = (s.action || "").trim().toLowerCase().replace(/\s+/g, " ");
+      const key = `${s.category}|||${normDesc}|||${normAction}`;
+
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          ...s,
+          codes: [s.code],
+          count: 1,
+        });
+      } else {
+        const codes = existing.codes || [existing.code];
+        if (!codes.includes(s.code)) {
+          codes.push(s.code);
+          existing.codes = codes;
+          existing.count = codes.length;
+        }
+      }
+    }
+
+    return Array.from(map.values());
+  }, [statuses]);
+
   // Filtered and sorted statuses with intelligent ranking
   const filteredStatuses = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
-    return statuses
+    return groupedStatuses
       .filter((s) => {
         const matchCat =
           selectedCategory === "Все" || s.category.toLowerCase() === selectedCategory.toLowerCase();
         if (!matchCat) return false;
         if (!q) return true;
 
-        return (
-          s.code.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q) ||
-          s.action.toLowerCase().includes(q) ||
-          s.category.toLowerCase().includes(q)
-        );
+        const codes = s.codes || [s.code];
+        const matchCode = codes.some((c) => c.toLowerCase().includes(q));
+        const matchDesc = s.description.toLowerCase().includes(q);
+        const matchAction = s.action.toLowerCase().includes(q);
+        const matchCategory = s.category.toLowerCase().includes(q);
+
+        return matchCode || matchDesc || matchAction || matchCategory;
       })
       .sort((a, b) => {
         if (!q) return 0;
-        const aCode = a.code.toLowerCase();
-        const bCode = b.code.toLowerCase();
+        const aCodes = a.codes || [a.code];
+        const bCodes = b.codes || [b.code];
+
+        const aExactCode = aCodes.some((c) => c.toLowerCase() === q);
+        const bExactCode = bCodes.some((c) => c.toLowerCase() === q);
+        if (aExactCode && !bExactCode) return -1;
+        if (bExactCode && !aExactCode) return 1;
+
+        const aStartsCode = aCodes.some((c) => c.toLowerCase().startsWith(q));
+        const bStartsCode = bCodes.some((c) => c.toLowerCase().startsWith(q));
+        if (aStartsCode && !bStartsCode) return -1;
+        if (bStartsCode && !aStartsCode) return 1;
+
         const aDesc = a.description.toLowerCase();
         const bDesc = b.description.toLowerCase();
 
-        // 1. Exact code match
-        if (aCode === q && bCode !== q) return -1;
-        if (bCode === q && aCode !== q) return 1;
-
-        // 2. Code starts with query
-        if (aCode.startsWith(q) && !bCode.startsWith(q)) return -1;
-        if (bCode.startsWith(q) && !aCode.startsWith(q)) return 1;
-
-        // 3. Operation description starts with query
         if (aDesc.startsWith(q) && !bDesc.startsWith(q)) return -1;
         if (bDesc.startsWith(q) && !aDesc.startsWith(q)) return 1;
 
-        // 4. Operation description contains query
         const aHasDesc = aDesc.includes(q);
         const bHasDesc = bDesc.includes(q);
         if (aHasDesc && !bHasDesc) return -1;
@@ -90,7 +121,7 @@ function AntigravityHomeContent() {
 
         return 0;
       });
-  }, [statuses, searchQuery, selectedCategory]);
+  }, [groupedStatuses, searchQuery, selectedCategory]);
 
   const [visibleCount, setVisibleCount] = useState(36);
 
@@ -130,7 +161,7 @@ function AntigravityHomeContent() {
               transition={{ delay: 0.1 }}
               className="mt-4 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed font-normal"
             >
-              Мгновенный поиск кодов операций склада, регламентов ТСД и автоматическая обработка штрихкодов.
+              Мгновенный поиск статусов операций склада, регламентов ТСД и автоматическая обработка штрихкодов.
             </motion.p>
 
             {/* Search Input Bar */}
@@ -173,52 +204,13 @@ function AntigravityHomeContent() {
                     <span>{category}</span>
                     {category === "Все" && (
                       <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.2 text-[10px] font-mono">
-                        {statuses.length}
+                        {groupedStatuses.length}
                       </span>
                     )}
                   </button>
                 );
               })}
             </motion.div>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                Кодов в базе
-              </span>
-              <span className="font-mono text-2xl font-bold text-primary">{statuses.length}</span>
-              <span className="text-[11px] text-muted-foreground">Синхронизировано</span>
-            </div>
-
-            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                Категорий
-              </span>
-              <span className="font-mono text-2xl font-bold text-foreground">
-                {categories.length - 1}
-              </span>
-              <span className="text-[11px] text-muted-foreground">Все зоны склада</span>
-            </div>
-
-            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                Отклик поиска
-              </span>
-              <span className="font-mono text-2xl font-bold text-emerald-400">&lt; 1ms</span>
-              <span className="text-[11px] text-muted-foreground">Instant Indexing</span>
-            </div>
-
-            <div className="antigravity-card flex flex-col gap-1 rounded-2xl p-4">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                Физика Zero-G
-              </span>
-              <span className="font-mono text-2xl font-bold text-purple-400">
-                {zeroG ? "Активна" : "Пассивна"}
-              </span>
-              <span className="text-[11px] text-muted-foreground">Orbital Engine</span>
-            </div>
           </div>
 
           {/* Results Grid / List */}

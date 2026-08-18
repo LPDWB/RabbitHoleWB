@@ -15,7 +15,7 @@ interface Props {
 export function InputSearch({
   value,
   onChange,
-  placeholder = "Введите название операции (напр. Приемка, Сборка, Подмена) или код статуса (AIP, ASP, WIJ)...",
+  placeholder = "Введите название операции (напр. Приемка, Сборка, Подмена) или статус (AIP, ASP, WIJ)...",
   totalMatches,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
