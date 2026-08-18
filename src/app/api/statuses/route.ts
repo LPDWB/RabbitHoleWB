@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import knowledgeBase from "@/data/knowledgeBase.json";
 
 export interface WMSStatus {
   id: string;
@@ -10,170 +11,187 @@ export interface WMSStatus {
   priority?: "high" | "normal" | "low";
 }
 
-const DEFAULT_STATUSES: WMSStatus[] = [
-  {
-    id: "stat-10",
-    code: "10",
-    category: "Приемка",
-    description: "Товар зарегистрирован в зоне выгрузки, ожидает первичного сканирования и сверки с накладной.",
-    action: "Отсканируйте ШК грузового места на ТСД, проверьте целостность паллеты и передайте в зону сортировки.",
-    badgeType: "blue",
-    priority: "normal",
-  },
-  {
-    id: "stat-20",
-    code: "20",
-    category: "Приемка",
-    description: "Товар принят поштучно, выполнена проверка габаритов и сроков годности.",
-    action: "Наклейте стикер сгенерированного ШК партии, переместите в буферную зону размещения.",
-    badgeType: "blue",
-    priority: "normal",
-  },
-  {
-    id: "stat-30",
-    code: "30",
-    category: "Хранение",
-    description: "Товар размещен в ячейке долгосрочного или мезонинного хранения.",
-    action: "Подтвердите ячейку сканированием контрольного адреса стеллажа (Ряд-Секция-Полка).",
-    badgeType: "cyan",
-    priority: "normal",
-  },
-  {
-    id: "stat-40",
-    code: "40",
-    category: "Сборка",
-    description: "Сформировано сборочное задание (Pick List), товар зарезервирован под заказ покупателя.",
-    action: "Следуйте маршруту ТСД к ячейке отбора, подтвердите изъятие нужного количества сканированием ШК товара.",
-    badgeType: "yellow",
-    priority: "high",
-  },
-  {
-    id: "stat-50",
-    code: "50",
-    category: "Сборка",
-    description: "Сборка завершена, контейнер с заказами перемещен на линию упаковки.",
-    action: "Передайте сборочный лоток оператору стола контроля и упаковки, закройте волну в ТСД.",
-    badgeType: "yellow",
-    priority: "normal",
-  },
-  {
-    id: "stat-60",
-    code: "60",
-    category: "Упаковка",
-    description: "Заказ упакован в сейф-пакет или гофрокороб, нанесен транспортный стикер доставки.",
-    action: "Отсканируйте транспортный ШК места, поместите короб на конвейер сортировки по направлениям.",
-    badgeType: "purple",
-    priority: "high",
-  },
-  {
-    id: "stat-70",
-    code: "70",
-    category: "Сортировка",
-    description: "Заказ распределен по маршруту магистрального рейса или ПВЗ.",
-    action: "Поместите грузовое место в тарную тележку или на паллету соответствующего направления рейса.",
-    badgeType: "cyan",
-    priority: "normal",
-  },
-  {
-    id: "stat-80",
-    code: "80",
-    category: "Отгрузка",
-    description: "Паллета запаллетирована, сформирован реестр передачи и опломбирована фура.",
-    action: "Подпишите путевой лист у водителя-экспедитора, измените статус рейса на 'В пути'.",
-    badgeType: "green",
-    priority: "high",
-  },
-  {
-    id: "stat-90",
-    code: "90",
-    category: "Инвентаризация",
-    description: "Ячейка заблокирована для циклического пересчета остатков или расследования расхождений.",
-    action: "Проведите полный пересчет всех единиц в ячейке, внесите фактическое количество через ТСД ревизора.",
-    badgeType: "purple",
-    priority: "high",
-  },
-  {
-    id: "stat-95",
-    code: "95",
-    category: "Брак",
-    description: "Товар поврежден, имеет истекший срок годности или нечитаемый заводской штрихкод.",
-    action: "Переместите единицу в изолятор брака (зона Quarantine), оформите акт расхождений ТОРГ-2.",
-    badgeType: "red",
-    priority: "high",
-  },
-  {
-    id: "stat-99",
-    code: "99",
-    category: "Возвраты",
-    description: "Возвратный заказ от клиента поступил на склад для дефектовки и повторной приемки.",
-    action: "Отсканируйте номер возвратной возвратной накладной, проверьте товарный вид и примите решение о ресток/утилизации.",
-    badgeType: "yellow",
-    priority: "normal",
-  },
-  {
-    id: "stat-105",
-    code: "105",
-    category: "Кросс-докинг",
-    description: "Прямая перегрузка без размещения в зоне длительного хранения.",
-    action: "Сверьте маркировку транзитного паллета и сразу направьте в зону консолидации выезда.",
-    badgeType: "blue",
-    priority: "normal",
-  },
-];
+const DEFAULT_STATUSES: WMSStatus[] = knowledgeBase as WMSStatus[];
+
+function detectCategory(code: string, desc: string, action: string): string {
+  const text = `${desc} ${action} ${code}`.toLowerCase();
+  if (
+    text.includes("приемк") ||
+    text.includes("приёмк") ||
+    text.includes("принят") ||
+    text.includes("выгрузк") ||
+    text.includes("поступлен")
+  ) {
+    return "Приемка";
+  }
+  if (
+    text.includes("раскладк") ||
+    text.includes("мх") ||
+    text.includes("размещен") ||
+    text.includes("ячейк") ||
+    text.includes("стеллаж") ||
+    text.includes("хранен")
+  ) {
+    return "Раскладка и МХ";
+  }
+  if (
+    text.includes("сборк") ||
+    text.includes("собран") ||
+    text.includes("отбор") ||
+    text.includes("пикинг")
+  ) {
+    return "Сборка";
+  }
+  if (
+    text.includes("упаковк") ||
+    text.includes("переупаковк") ||
+    text.includes("завернуть") ||
+    text.includes("пакет") ||
+    text.includes("скотч")
+  ) {
+    return "Упаковка";
+  }
+  if (
+    text.includes("сортировк") ||
+    text.includes("отгрузк") ||
+    text.includes("рейс") ||
+    text.includes("пвз") ||
+    text.includes("сц") ||
+    text.includes("консолидац")
+  ) {
+    return "Сортировка и Отгрузка";
+  }
+  if (
+    text.includes("перемещен") ||
+    text.includes("паллет") ||
+    text.includes("карщик") ||
+    text.includes("грузчик") ||
+    text.includes("транзит")
+  ) {
+    return "Перемещение";
+  }
+  if (
+    text.includes("инвентар") ||
+    text.includes("пересчет") ||
+    text.includes("ревизи") ||
+    text.includes("остатк")
+  ) {
+    return "Инвентаризация";
+  }
+  if (
+    text.includes("брак") ||
+    text.includes("подмен") ||
+    text.includes("неправильн") ||
+    text.includes("нв") ||
+    text.includes("дефект") ||
+    text.includes("утилизац") ||
+    text.includes("порч")
+  ) {
+    return "Брак и Проблемы";
+  }
+  if (text.includes("возврат") || text.includes("ппвз")) {
+    return "Возвраты";
+  }
+  return "Общие операции";
+}
+
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let current = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"' && insideQuotes && nextChar === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === "," && !insideQuotes) {
+      row.push(current.trim());
+      current = "";
+    } else if ((char === "\r" || char === "\n") && !insideQuotes) {
+      if (char === "\r" && nextChar === "\n") i++;
+      row.push(current.trim());
+      if (row.some((cell) => cell.length > 0)) {
+        rows.push(row);
+      }
+      row = [];
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.length > 0 || row.length > 0) {
+    row.push(current.trim());
+    if (row.some((cell) => cell.length > 0)) {
+      rows.push(row);
+    }
+  }
+  return rows;
+}
 
 export async function GET() {
   try {
-    // Attempt Google Sheets fetch if sheet url or config is provided
-    const sheetId = process.env.GOOGLE_SHEETS_ID;
-    if (sheetId) {
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-      const response = await fetch(csvUrl, { next: { revalidate: 60 } });
-      if (response.ok) {
-        const text = await response.text();
-        const lines = text.split("\n").filter((l) => l.trim().length > 0);
-        if (lines.length > 1) {
-          const parsedStatuses: WMSStatus[] = [];
-          for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
-            if (cols.length >= 4) {
-              const [code, category, description, action] = cols;
-              parsedStatuses.push({
-                id: `sheet-${i}`,
-                code: code || String(i),
-                category: category || "Общее",
-                description: description || "Описание отсутствует",
-                action: action || "Действие не указано",
-                badgeType: category.includes("Брак")
-                  ? "red"
-                  : category.includes("Отгруз")
-                  ? "green"
-                  : category.includes("Сбор")
-                  ? "yellow"
-                  : "blue",
-              });
-            }
-          }
-          if (parsedStatuses.length > 0) {
-            return NextResponse.json({
-              statuses: parsedStatuses,
-              source: "Google Sheets Live",
-              timestamp: new Date().toISOString(),
-            });
-          }
+    const sheetId =
+      process.env.GOOGLE_SHEETS_ID || "1brVhUcgvrVHTbZtmzk5n1JZ1cBUDWRNC0sry2tDTEjw";
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+
+    const response = await fetch(csvUrl, { next: { revalidate: 60 } });
+    if (response.ok) {
+      const text = await response.text();
+      const parsedRows = parseCSV(text);
+      if (parsedRows.length > 1) {
+        const parsedStatuses: WMSStatus[] = [];
+        for (let i = 1; i < parsedRows.length; i++) {
+          const cols = parsedRows[i];
+          const code = (cols[0] || "").trim();
+          const desc = (cols[1] || "").trim();
+          const action = (cols[2] || "").trim();
+
+          if (!code && !desc && !action) continue;
+
+          const category = detectCategory(code, desc, action);
+          let badgeType: WMSStatus["badgeType"] = "blue";
+          if (category === "Брак и Проблемы") badgeType = "red";
+          else if (category === "Сортировка и Отгрузка") badgeType = "green";
+          else if (category === "Сборка" || category === "Возвраты") badgeType = "yellow";
+          else if (category === "Упаковка" || category === "Инвентаризация") badgeType = "purple";
+          else if (category === "Раскладка и МХ" || category === "Перемещение") badgeType = "cyan";
+
+          parsedStatuses.push({
+            id: `stat-${i}`,
+            code: code || `ID-${i}`,
+            category,
+            description: desc || "Описание отсутствует",
+            action: action || "Действие не указано",
+            badgeType,
+          });
+        }
+
+        if (parsedStatuses.length > 0) {
+          return NextResponse.json({
+            statuses: parsedStatuses,
+            count: parsedStatuses.length,
+            timestamp: new Date().toISOString(),
+          });
         }
       }
     }
 
     return NextResponse.json({
       statuses: DEFAULT_STATUSES,
-      source: "Google Antigravity WMS Core Engine",
+      count: DEFAULT_STATUSES.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Status fetch error:", error);
     return NextResponse.json({
       statuses: DEFAULT_STATUSES,
-      source: "Antigravity Fallback Cache",
+      count: DEFAULT_STATUSES.length,
       timestamp: new Date().toISOString(),
     });
   }

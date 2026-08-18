@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, Barcode, Compass, Layers } from "lucide-react";
+import { ArrowRight, Barcode, Compass } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -10,9 +10,8 @@ import { AntigravityCanvas } from "@/components/AntigravityCanvas";
 import { AntigravityProvider } from "@/components/AntigravityContext";
 
 const tools = [
-
   {
-    title: "Каталог статусов WMS",
+    title: "Статусы WMS",
     description: "Мгновенная расшифровка кодов складских операций с подробными инструкциями для операторов ТСД и ревизоров.",
     href: "/",
     icon: Compass,
@@ -41,14 +40,6 @@ function ToolsCatalogContent() {
         <div className="flex flex-col gap-10">
           {/* Header */}
           <div className="flex flex-col gap-3 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="flex h-6 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-[11px] font-mono font-semibold text-primary border border-primary/20">
-                <Layers className="h-3.5 w-3.5" />
-                ANTIGRAVITY SUITE
-              </span>
-              <span className="text-xs font-mono text-muted-foreground">Google Cloud WMS Tools</span>
-            </div>
-
             <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl text-foreground">
               Инструменты и утилиты WMS
             </h1>

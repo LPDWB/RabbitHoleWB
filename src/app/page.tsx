@@ -16,9 +16,7 @@ function AntigravityHomeContent() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Все");
-  const [sourceInfo, setSourceInfo] = useState("Antigravity Engine");
   const { zeroG, hapticPulse } = useAntigravity();
-
 
   useEffect(() => {
     async function loadStatuses() {
@@ -28,7 +26,6 @@ function AntigravityHomeContent() {
         if (res.ok) {
           const data = await res.json();
           setStatuses(data.statuses || []);
-          if (data.source) setSourceInfo(data.source);
         }
       } catch (err) {
         console.error("Failed to load statuses", err);
@@ -48,23 +45,63 @@ function AntigravityHomeContent() {
     return ["Все", ...Array.from(set)];
   }, [statuses]);
 
-  // Filtered statuses
+  // Filtered and sorted statuses with intelligent ranking
   const filteredStatuses = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return statuses.filter((s) => {
-      const matchCat =
-        selectedCategory === "Все" || s.category.toLowerCase() === selectedCategory.toLowerCase();
-      if (!matchCat) return false;
-      if (!q) return true;
 
-      return (
-        s.code.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        s.action.toLowerCase().includes(q)
-      );
-    });
+    return statuses
+      .filter((s) => {
+        const matchCat =
+          selectedCategory === "Все" || s.category.toLowerCase() === selectedCategory.toLowerCase();
+        if (!matchCat) return false;
+        if (!q) return true;
+
+        return (
+          s.code.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          s.action.toLowerCase().includes(q) ||
+          s.category.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        if (!q) return 0;
+        const aCode = a.code.toLowerCase();
+        const bCode = b.code.toLowerCase();
+        const aDesc = a.description.toLowerCase();
+        const bDesc = b.description.toLowerCase();
+
+        // 1. Exact code match
+        if (aCode === q && bCode !== q) return -1;
+        if (bCode === q && aCode !== q) return 1;
+
+        // 2. Code starts with query
+        if (aCode.startsWith(q) && !bCode.startsWith(q)) return -1;
+        if (bCode.startsWith(q) && !aCode.startsWith(q)) return 1;
+
+        // 3. Operation description starts with query
+        if (aDesc.startsWith(q) && !bDesc.startsWith(q)) return -1;
+        if (bDesc.startsWith(q) && !aDesc.startsWith(q)) return 1;
+
+        // 4. Operation description contains query
+        const aHasDesc = aDesc.includes(q);
+        const bHasDesc = bDesc.includes(q);
+        if (aHasDesc && !bHasDesc) return -1;
+        if (!aHasDesc && bHasDesc) return 1;
+
+        return 0;
+      });
   }, [statuses, searchQuery, selectedCategory]);
+
+  const [visibleCount, setVisibleCount] = useState(36);
+
+  // Reset visible count when search or category changes
+  useEffect(() => {
+    setVisibleCount(36);
+  }, [searchQuery, selectedCategory]);
+
+  const visibleStatuses = useMemo(() => {
+    return filteredStatuses.slice(0, visibleCount);
+  }, [filteredStatuses, visibleCount]);
 
   return (
     <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/25">
@@ -77,26 +114,11 @@ function AntigravityHomeContent() {
         <div className="flex flex-col gap-10">
           {/* Antigravity Hero Section */}
           <div className="relative flex flex-col items-center text-center">
-            {/* Holographic Pill Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/60 px-4 py-1.5 backdrop-blur-xl shadow-[0_0_20px_rgba(66,133,244,0.15)]"
-            >
-              <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-primary">
-                Google Antigravity // WMS Core
-              </span>
-              <span className="text-xs text-muted-foreground/60">•</span>
-              <span className="font-mono text-xs text-muted-foreground">{sourceInfo}</span>
-            </motion.div>
-
             {/* Headline */}
             <motion.h1
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="mt-6 font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground"
+              className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground"
             >
               Управление статусами в{" "}
               <span className="google-laser-text">невесомости</span>
@@ -105,10 +127,10 @@ function AntigravityHomeContent() {
             <motion.p
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
               className="mt-4 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed font-normal"
             >
-              Мгновенный поиск кодов операций склада, регламентов ТСД и автоматическая обработка штрихкодов в ультрадинамичной среде.
+              Мгновенный поиск кодов операций склада, регламентов ТСД и автоматическая обработка штрихкодов.
             </motion.p>
 
             {/* Search Input Bar */}
@@ -204,7 +226,7 @@ function AntigravityHomeContent() {
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold tracking-tight text-foreground">
-                  {selectedCategory === "Все" ? "Каталог статусов WMS" : `Статусы: ${selectedCategory}`}
+                  {selectedCategory === "Все" ? "Все статусы" : `Статусы: ${selectedCategory}`}
                 </h2>
                 <span className="rounded-full bg-card px-2.5 py-0.5 text-xs font-mono text-muted-foreground border border-border">
                   {filteredStatuses.length}
@@ -233,13 +255,34 @@ function AntigravityHomeContent() {
                 ))}
               </div>
             ) : filteredStatuses.length > 0 ? (
-              <motion.div layout className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence mode="popLayout">
-                  {filteredStatuses.map((status, idx) => (
-                    <StatusCard key={status.id || status.code} status={status} index={idx} />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+              <>
+                <motion.div layout className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <AnimatePresence mode="popLayout">
+                    {visibleStatuses.map((status, idx) => (
+                      <StatusCard key={status.id || status.code} status={status} index={idx} />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+
+                {filteredStatuses.length > visibleCount && (
+                  <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setVisibleCount((prev) => prev + 36)}
+                      className="rounded-full px-6 py-2 border-primary/30 hover:border-primary text-sm font-medium"
+                    >
+                      Показать ещё (+36 из {filteredStatuses.length - visibleCount})
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setVisibleCount(filteredStatuses.length)}
+                      className="rounded-full text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Показать все ({filteredStatuses.length})
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="antigravity-card flex flex-col items-center justify-center rounded-3xl p-12 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-border text-muted-foreground">

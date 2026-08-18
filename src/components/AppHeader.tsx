@@ -41,7 +41,7 @@ export function AppHeader() {
   const navItems = [
     {
       href: "/",
-      label: "Каталог WMS",
+      label: "Статусы",
       icon: Compass,
       active: pathname === "/",
     },
@@ -79,15 +79,9 @@ export function AppHeader() {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-display text-base font-bold tracking-tight text-foreground sm:text-lg">
-                  Antigravity
-                </span>
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">
-                  Google WMS
+                  Antigravity WMS
                 </span>
               </div>
-              <span className="text-[11px] font-mono text-muted-foreground">
-                Quantum Console v3.2
-              </span>
             </div>
           </Link>
 
@@ -187,7 +181,6 @@ export function AppHeader() {
                   <LogoMark className="h-7 w-7" />
                   <div className="flex flex-col text-left">
                     <span className="font-display text-base font-bold">Antigravity WMS</span>
-                    <span className="text-[11px] font-mono text-muted-foreground">Google Cloud Console</span>
                   </div>
                 </SheetTitle>
               </SheetHeader>
