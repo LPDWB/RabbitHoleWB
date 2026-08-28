@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Barcode,
   Compass,
   Layers,
   Menu,
-  Moon,
-  Sun,
-  Orbit,
+  Search,
+  X,
+  Sparkles,
 } from "lucide-react";
-import { motion } from "framer-motion";
-
 
 import { LogoMark } from "@/components/LogoMark";
 import { useAntigravity } from "@/components/AntigravityContext";
@@ -27,16 +24,50 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-export function AppHeader() {
-  const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const { zeroG, toggleZeroG, hapticPulse } = useAntigravity();
+interface AppHeaderProps {
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
+  totalMatches?: number;
+  totalCount?: number;
+}
 
+export function AppHeader({
+  searchQuery = "",
+  onSearchChange,
+  totalMatches,
+  totalCount,
+}: AppHeaderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { hapticPulse } = useAntigravity();
+
+  const isHomePage = pathname === "/";
+
+  // Global keyboard shortcut '/' to focus search
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        inputRef.current?.focus();
+        hapticPulse(1);
+      } else if (e.key === "Escape" && document.activeElement === inputRef.current) {
+        if (searchQuery && onSearchChange) {
+          onSearchChange("");
+        } else {
+          inputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [searchQuery, onSearchChange, hapticPulse]);
 
   const navItems = [
     {
@@ -59,34 +90,105 @@ export function AppHeader() {
     },
   ];
 
-  return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/70 backdrop-blur-2xl transition-all duration-300">
-      {/* Top Google Multi-Color Laser Strip */}
-      <div className="h-[2px] w-full google-laser-gradient" />
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isHomePage) {
+      router.push(`/?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
-      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.08] bg-[#0e0c15]/85 backdrop-blur-2xl transition-all duration-300">
+      {/* Ultra-thin neon gradient border glow line */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-fuchsia-600 via-pink-500 to-violet-600 opacity-80" />
+
+      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Left: Brand Identity */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 shrink-0">
           <Link
             href="/"
             onClick={() => hapticPulse(1)}
             className="group flex items-center gap-3 transition-transform active:scale-95"
           >
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-card/80 p-1.5 shadow-sm ring-1 ring-border/80 group-hover:ring-primary/50 transition-all">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.04] p-2 border border-white/10 group-hover:border-fuchsia-500/50 group-hover:shadow-[0_0_20px_rgba(217,70,239,0.25)] transition-all">
               <LogoMark className="h-full w-full" />
             </div>
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="font-display text-base font-bold tracking-tight text-foreground sm:text-lg">
+                <span className="font-display text-base sm:text-lg font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-fuchsia-100 to-pink-200 bg-clip-text text-transparent">
                   Antigravity WMS
                 </span>
+                <span className="hidden xl:inline-flex items-center rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 px-2 py-0.5 text-[10px] font-mono text-fuchsia-300 font-semibold">
+                  PRO
+                </span>
               </div>
+              <span className="text-[11px] font-mono text-zinc-400 hidden sm:block">
+                База знаний операций склада
+              </span>
             </div>
           </Link>
+        </div>
 
-          {/* Desktop Nav Pills */}
-          <nav className="hidden md:flex items-center gap-1.5 ml-6 pl-6 border-l border-border/60">
+        {/* Center: Large Fixed Glassmorphism Search Bar */}
+        <div className="flex-1 max-w-2xl mx-auto">
+          <form onSubmit={handleSearchSubmit} className="relative w-full group">
+            {/* Ambient neon focus glow */}
+            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-fuchsia-600/30 via-pink-600/20 to-purple-600/30 opacity-0 group-focus-within:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
+
+            <div className="relative flex items-center gap-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.06] focus-within:bg-white/[0.08] border border-white/10 focus-within:border-fuchsia-500/60 focus-within:ring-2 focus-within:ring-fuchsia-500/20 px-4 py-2.5 sm:py-3 transition-all shadow-inner">
+              <Search className="h-5 w-5 text-fuchsia-400 shrink-0 transition-transform group-focus-within:scale-110" />
+
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  if (onSearchChange) {
+                    onSearchChange(e.target.value);
+                    hapticPulse(0.3);
+                  }
+                }}
+                placeholder="Поиск по названию (напр. Приемка, Сборка) или статусу (AIP, ASP)..."
+                className="w-full bg-transparent text-sm sm:text-base text-zinc-100 placeholder:text-zinc-400 focus:outline-none"
+              />
+
+              {/* Match Counter Badge */}
+              {searchQuery && totalMatches !== undefined && (
+                <span className="hidden md:inline-flex items-center rounded-full bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 text-xs font-mono font-semibold text-fuchsia-300 shrink-0">
+                  {totalMatches} {totalMatches === 1 ? "статус" : "статусов"}
+                </span>
+              )}
+
+              {/* Clear button */}
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSearchChange) {
+                      onSearchChange("");
+                      inputRef.current?.focus();
+                      hapticPulse(0.8);
+                    }
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 hover:bg-fuchsia-500/30 text-zinc-400 hover:text-white transition-all shrink-0"
+                  title="Очистить поиск"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <div className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-zinc-400/80 border border-white/10 rounded-lg px-2 py-0.5 bg-white/[0.02] shrink-0">
+                  <kbd>/</kbd>
+                </div>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* Right Navigation & Tools */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -94,73 +196,27 @@ export function AppHeader() {
                   key={item.href}
                   href={item.href}
                   onClick={() => hapticPulse(0.5)}
-                  className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-medium transition-all ${
                     item.active
-                      ? "bg-primary/15 text-primary shadow-xs font-semibold"
-                      : "text-muted-foreground hover:bg-card hover:text-foreground"
+                      ? "bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 font-semibold shadow-[0_0_15px_rgba(217,70,239,0.15)]"
+                      : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04] border border-transparent"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
-                  {item.active && (
-                    <motion.div
-                      layoutId="activeNavIndicator"
-                      className="absolute inset-0 rounded-full border border-primary/40 pointer-events-none"
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    />
-                  )}
                 </Link>
               );
             })}
           </nav>
-        </div>
 
-        {/* Right Controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Zero-G Physics Toggle Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleZeroG}
-            className={`hidden sm:flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-mono transition-all ${
-              zeroG
-                ? "bg-primary/10 border-primary/40 text-primary shadow-[0_0_15px_rgba(66,133,244,0.25)]"
-                : "bg-background/40 border-border text-muted-foreground"
-            }`}
-            title="Переключить режим невесомости"
-          >
-            <Orbit className={`h-3.5 w-3.5 ${zeroG ? "animate-spin text-primary" : ""}`} style={{ animationDuration: "8s" }} />
-            <span>Zero-G: {zeroG ? "ON" : "OFF"}</span>
-          </Button>
-
-          {/* Live Telemetry Pill */}
-          <div className="hidden lg:flex items-center gap-2 rounded-full bg-card/60 border border-border/60 px-3 py-1.5 text-xs font-mono text-muted-foreground backdrop-blur-md">
+          {/* Sync indicator */}
+          <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/10 px-3 py-2 text-xs font-mono text-zinc-400">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span>SYNC: 100%</span>
+            <span className="hidden xl:inline">LIVE DB</span>
           </div>
-
-          {/* Theme Switcher */}
-          {mounted && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setTheme(theme === "dark" ? "light" : "dark");
-                hapticPulse(1);
-              }}
-              className="rounded-full h-9 w-9 border-border/80 bg-card/60 backdrop-blur-md hover:border-primary/40"
-              aria-label="Сменить тему"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-400 transition-transform rotate-0 hover:rotate-90 duration-300" />
-              ) : (
-                <Moon className="h-4 w-4 text-indigo-500 transition-transform rotate-0 hover:-rotate-45 duration-300" />
-              )}
-            </Button>
-          )}
 
           {/* Mobile Menu Trigger */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -168,26 +224,31 @@ export function AppHeader() {
               <Button
                 variant="outline"
                 size="icon"
-                className="md:hidden rounded-full h-9 w-9 border-border/80 bg-card/60"
+                className="lg:hidden rounded-xl h-10 w-10 border-white/10 bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08]"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-5 w-5" />
                 <span className="sr-only">Меню</span>
               </Button>
             </SheetTrigger>
 
-            <SheetContent side="right" className="w-[300px] sm:w-[360px] bg-background/95 backdrop-blur-3xl border-border/60">
-              <SheetHeader className="pb-6 border-b border-border/50">
-                <SheetTitle className="flex items-center gap-3">
+            <SheetContent side="right" className="w-[300px] sm:w-[360px] bg-[#0e0c15]/95 backdrop-blur-3xl border-white/10 text-zinc-100">
+              <SheetHeader className="pb-6 border-b border-white/10">
+                <SheetTitle className="flex items-center gap-3 text-zinc-100">
                   <LogoMark className="h-7 w-7" />
                   <div className="flex flex-col text-left">
-                    <span className="font-display text-base font-bold">Antigravity WMS</span>
+                    <span className="font-display text-base font-bold bg-gradient-to-r from-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+                      Antigravity WMS
+                    </span>
+                    <span className="text-[11px] font-mono text-zinc-400">
+                      База знаний
+                    </span>
                   </div>
                 </SheetTitle>
               </SheetHeader>
 
               <div className="flex flex-col gap-6 py-6">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3">
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 px-2">
                     Навигация
                   </span>
                   {navItems.map((item) => {
@@ -200,39 +261,23 @@ export function AppHeader() {
                           setSheetOpen(false);
                           hapticPulse(1);
                         }}
-                        className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                           item.active
-                            ? "bg-primary/15 text-primary font-semibold border border-primary/30"
-                            : "text-muted-foreground hover:bg-card hover:text-foreground"
+                            ? "bg-fuchsia-500/15 text-fuchsia-300 font-semibold border border-fuchsia-500/30"
+                            : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100"
                         }`}
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-5 w-5 text-fuchsia-400" />
                         <span>{item.label}</span>
                       </Link>
                     );
                   })}
                 </div>
 
-                <div className="flex flex-col gap-3 pt-4 border-t border-border/50">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3">
-                    Управление физикой
-                  </span>
-                  <div className="flex items-center justify-between rounded-2xl bg-card p-4 border border-border/60">
-                    <div className="flex items-center gap-3">
-                      <Orbit className="h-5 w-5 text-primary" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">Режим Zero-G</span>
-                        <span className="text-xs text-muted-foreground">Невесомость и частицы</span>
-                      </div>
-                    </div>
-                    <Button
-                      variant={zeroG ? "default" : "outline"}
-                      size="sm"
-                      onClick={toggleZeroG}
-                      className="rounded-full text-xs"
-                    >
-                      {zeroG ? "ВКЛ" : "ВЫКЛ"}
-                    </Button>
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2 rounded-xl bg-white/[0.03] border border-white/10 p-3 text-xs font-mono text-zinc-400">
+                    <Sparkles className="h-4 w-4 text-fuchsia-400" />
+                    <span>Всего регламентов: {totalCount || 483}</span>
                   </div>
                 </div>
               </div>

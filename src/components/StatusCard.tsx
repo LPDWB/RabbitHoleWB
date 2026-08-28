@@ -24,9 +24,8 @@ interface Props {
 
 export function StatusCard({ status, index }: Props) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [copiedAllCodes, setCopiedAllCodes] = useState(false);
   const [copiedFull, setCopiedFull] = useState(false);
-  const { zeroG, hapticPulse } = useAntigravity();
+  const { hapticPulse } = useAntigravity();
 
   const codes = status.codes && status.codes.length > 0 ? status.codes : [status.code];
   const isGrouped = codes.length > 1;
@@ -43,22 +42,10 @@ export function StatusCard({ status, index }: Props) {
     }
   };
 
-  const handleCopyAllCodes = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(codes.join(", "));
-      setCopiedAllCodes(true);
-      hapticPulse(1.8);
-      setTimeout(() => setCopiedAllCodes(false), 2000);
-    } catch {
-      // fallback
-    }
-  };
-
   const handleCopyFull = async () => {
     try {
-      const codeLabel = isGrouped ? `Статусы: ${codes.join(", ")}` : `Статус ${codes[0]}`;
-      const text = `[WMS ${codeLabel}] ${status.category}\nОписание: ${status.description}\nДействие ТСД: ${status.action}`;
+      const codeLabel = isGrouped ? `Статусы: ${codes.join(", ")}` : `Статус: ${codes[0]}`;
+      const text = `[WMS ${codeLabel}] ${status.category}\nНазвание: ${status.description}\nРегламент ТСД: ${status.action}`;
       await navigator.clipboard.writeText(text);
       setCopiedFull(true);
       hapticPulse(2);
@@ -68,36 +55,19 @@ export function StatusCard({ status, index }: Props) {
     }
   };
 
-  const getBadgeClass = (category: string) => {
-    if (category.includes("Брак")) return "badge-red";
-    if (category.includes("Отгруз")) return "badge-green";
-    if (category.includes("Сбор") || category.includes("Возврат")) return "badge-yellow";
-    if (category.includes("Упаков") || category.includes("Инвент")) return "badge-purple";
-    if (category.includes("Сортиров") || category.includes("Хран")) return "badge-cyan";
-    return "badge-blue";
-  };
-
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.3) }}
-      className={`group relative flex flex-col justify-between rounded-3xl p-6 antigravity-card ${
-        zeroG ? "antigravity-floating" : ""
-      }`}
-      style={{
-        animationDelay: `${(index % 5) * 0.7}s`,
-      }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.2) }}
+      className="group relative flex flex-col justify-between rounded-2xl p-5 sm:p-6 bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] hover:border-fuchsia-500/40 hover:bg-white/[0.05] transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.36)] hover:shadow-[0_0_25px_rgba(217,70,239,0.12)]"
     >
-      {/* Top Laser Accent on Hover */}
-      <div className="absolute inset-x-8 top-0 h-[2px] opacity-0 group-hover:opacity-100 google-laser-gradient transition-opacity duration-300 rounded-full" />
-
       <div>
-        {/* Card Header: Codes + Category */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Status Code(s) Pill with copy action */}
+        {/* Card Top: Status Code(s) + Category Chip */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Status Codes */}
           <div className="flex flex-wrap items-center gap-2">
             {codes.map((code) => {
               const isCopied = copiedCode === code;
@@ -106,23 +76,27 @@ export function StatusCard({ status, index }: Props) {
                   key={code}
                   type="button"
                   onClick={(e) => handleCopyCode(e, code)}
-                  className={`group/code relative flex items-center gap-2 rounded-2xl bg-card px-3.5 py-1.5 border transition-all hover:border-primary hover:shadow-[0_0_15px_rgba(66,133,244,0.3)] active:scale-95 ${
-                    isGrouped ? "text-base font-mono font-bold" : "text-lg sm:text-xl font-mono font-bold"
-                  } ${isCopied ? "border-emerald-500 text-emerald-400" : "border-border/80 text-foreground"}`}
-                  title={`Нажмите, чтобы скопировать статус #${code}`}
+                  className={`group/code relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1 bg-white/[0.04] border transition-all duration-200 hover:border-fuchsia-500/60 active:scale-95 ${
+                    isCopied
+                      ? "border-emerald-500/80 bg-emerald-500/10 text-emerald-400"
+                      : "border-white/10 text-zinc-100"
+                  }`}
+                  title={`Нажмите, чтобы скопировать #${code}`}
                 >
-                  <span className="text-primary font-mono">#</span>
-                  <span>{code}</span>
-                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary opacity-60 group-hover/code:opacity-100 transition-opacity">
+                  <span className="font-mono font-black text-2xl sm:text-3xl tracking-tight bg-gradient-to-r from-fuchsia-400 via-pink-400 to-violet-400 bg-clip-text text-transparent group-hover/code:brightness-125">
+                    #{code}
+                  </span>
+
+                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-white/5 text-zinc-400 group-hover/code:text-fuchsia-300 transition-colors ml-1">
                     {isCopied ? (
-                      <Check className="h-3 w-3 text-emerald-400" />
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
                     ) : (
                       <Copy className="h-3 w-3" />
                     )}
                   </div>
 
                   {isCopied && (
-                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-sans font-bold text-white shadow-md animate-in fade-in zoom-in-95 z-20 whitespace-nowrap">
+                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-sans font-bold text-white shadow-lg animate-in fade-in zoom-in-95 z-20 whitespace-nowrap">
                       Скопировано!
                     </span>
                   )}
@@ -131,90 +105,62 @@ export function StatusCard({ status, index }: Props) {
             })}
 
             {isGrouped && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-mono font-semibold text-primary border border-primary/20">
+              <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/25 px-2.5 py-0.5 text-[11px] font-mono font-semibold text-fuchsia-300">
                 <Layers className="h-3 w-3" />
-                {codes.length} статуса
+                {codes.length} в группе
               </span>
             )}
           </div>
 
           {/* Category Chip */}
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getBadgeClass(
-              status.category
-            )}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
-            {status.category}
-          </span>
+          {status.category && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] border border-white/10 px-2.5 py-1 text-xs font-mono font-medium text-zinc-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
+              {status.category}
+            </span>
+          )}
         </div>
 
-        {/* Description Section */}
-        <div className="mt-5">
-          <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">
-            Описание операции
-          </h3>
-          <p className="mt-1.5 text-sm sm:text-[15px] font-normal leading-relaxed text-foreground/90">
+        {/* Operation Title / Description */}
+        <div className="mt-4">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400/80 font-medium">
+            Операция
+          </span>
+          <p className="mt-1 text-sm sm:text-[15px] font-medium leading-snug text-zinc-100">
             {status.description}
           </p>
         </div>
 
-        {/* Action / Procedure Section */}
-        <div className="mt-4 rounded-2xl bg-background/50 border border-border/60 p-3.5 backdrop-blur-sm">
-          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-primary">
+        {/* Action / Regulation Terminal Block */}
+        <div className="mt-4 rounded-xl bg-black/50 border border-white/[0.08] p-3.5 backdrop-blur-sm group-hover:border-white/[0.14] transition-colors">
+          <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-fuchsia-400 tracking-wide uppercase">
             <Terminal className="h-3.5 w-3.5" />
-            <span>Регламент ТСД / Действие:</span>
+            <span>&gt;_ РЕГЛАМЕНТ ТСД</span>
           </div>
-          <p className="mt-1 text-xs sm:text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 font-mono text-xs sm:text-[13px] text-zinc-300/90 leading-relaxed">
             {status.action}
           </p>
         </div>
       </div>
 
-      {/* Card Footer: Fast Copy & Actions */}
-      <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/40 gap-2">
-        {isGrouped ? (
-          <button
-            type="button"
-            onClick={handleCopyAllCodes}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            {copiedAllCodes ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-semibold">Все коды скопированы</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                <span>Скопировать все ({codes.join(", ")})</span>
-              </>
-            )}
-          </button>
+      {/* Full Width Copy Button at bottom */}
+      <button
+        type="button"
+        onClick={handleCopyFull}
+        className="mt-5 w-full rounded-xl py-2.5 px-4 bg-white/[0.04] hover:bg-gradient-to-r hover:from-fuchsia-600 hover:to-violet-600 text-zinc-200 hover:text-white border border-white/10 hover:border-fuchsia-500/50 transition-all duration-300 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-[0_0_20px_rgba(217,70,239,0.3)] active:scale-[0.99]"
+      >
+        {copiedFull ? (
+          <>
+            <Check className="h-4 w-4 text-emerald-300" />
+            <span className="text-emerald-300 font-semibold">Регламент скопирован в буфер</span>
+          </>
         ) : (
-          <span className="text-[11px] font-mono text-muted-foreground/60">
-            ID: {status.id}
-          </span>
+          <>
+            <Copy className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white" />
+            <span>Копировать {isGrouped ? "регламент группы" : `статус #${codes[0]}`}</span>
+          </>
         )}
-
-        <button
-          type="button"
-          onClick={handleCopyFull}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors ml-auto"
-        >
-          {copiedFull ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-emerald-400 font-semibold">Регламент скопирован</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              <span>Копировать регламент</span>
-            </>
-          )}
-        </button>
-      </div>
+      </button>
     </motion.div>
   );
 }
