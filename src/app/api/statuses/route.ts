@@ -136,9 +136,9 @@ function parseCSV(text: string): string[][] {
 
 export async function GET() {
   try {
-    const sheetId =
-      process.env.GOOGLE_SHEETS_ID || "1brVhUcgvrVHTbZtmzk5n1JZ1cBUDWRNC0sry2tDTEjw";
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+    const csvUrl =
+      process.env.GOOGLE_SHEETS_CSV_URL ||
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTLvAMU_aedXIh-bIf8WfGBFDG-E2yBCh1MQ4SvyDgGznfRp0lotEnqWsf8EQi8lzIptoMJqgHrsbdv/pub?gid=0&single=true&output=csv";
 
     const response = await fetch(csvUrl, { next: { revalidate: 60 } });
     if (response.ok) {
