@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
@@ -29,8 +28,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Google Antigravity // WMS Intelligence Console",
-  description: "Dynamic zero-gravity status lookup, quantum barcode & sticker parser, and warehouse intelligence system.",
+  title: "База знаний // Регламенты WMS",
+  description: "Корпоративный дашборд для регламентов WMS и база статусов.",
 };
 
 export default function RootLayout({
@@ -39,26 +38,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ru"
-      suppressHydrationWarning
-      className="dark transition-colors duration-500 ease-out"
-    >
+    <html lang="ru" className="dark">
       <body
-        className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} font-sans transition-colors duration-500 ease-out`}
+        className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} font-sans bg-slate-950 text-slate-100 antialiased selection:bg-fuchsia-500/30 selection:text-fuchsia-200`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <ErrorBoundary>
-            <div className="min-h-screen w-full bg-background text-foreground selection:bg-primary/25 selection:text-primary transition-colors duration-300">
-              {children}
-            </div>
-          </ErrorBoundary>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <div className="min-h-screen w-full bg-slate-950 text-slate-100">
+            {children}
+          </div>
+        </ErrorBoundary>
       </body>
     </html>
   );

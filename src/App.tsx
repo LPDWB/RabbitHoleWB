@@ -1,47 +1,49 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
+  Menu,
+  X,
   Home,
   Wrench,
   Search,
   Copy,
   Check,
-  X,
-  RotateCcw,
   RefreshCw,
   AlertCircle,
-  Cloud,
-  ChevronRight,
-  Download,
   Trash2,
+  Download,
   Barcode,
+  Layers,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
-import { VirtuosoGrid } from "react-virtuoso";
 import Papa from "papaparse";
 
-// --- TYPES ---
+// --- ТИПЫ ДАННЫХ ---
 export interface WMSStatusItem {
   id: string;
   code: string;
   category: string;
   description: string;
-  action: string;
 }
 
-// Прямая публичная ссылка на Google Таблицу (Published to web CSV)
+// Жестко заданная публичная ссылка на Google Таблицу (Published to web CSV)
 const DEFAULT_SHEETS_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTLvAMU_aedXIh-bIf8WfGBFDG-E2yBCh1MQ4SvyDgGznfRp0lotEnqWsf8EQi8lzIptoMJqgHrsbdv/pub?gid=0&single=true&output=csv";
 
-// Определение категории
-function detectCategory(code: string, desc: string, act: string): string {
-  const text = `${code} ${desc} ${act}`.toLowerCase();
+// Определение категории в случае нестандартных колонок
+function detectCategory(code: string, desc: string, action: string): string {
+  const text = `${code} ${desc} ${action}`.toLowerCase();
   if (
     text.includes("приемк") ||
+    text.includes("приёмк") ||
     code.startsWith("AI") ||
     code.startsWith("AS") ||
     code.startsWith("RCV") ||
-    code.startsWith("APR")
+    code.startsWith("APR") ||
+    code.startsWith("WI") ||
+    code.startsWith("PB")
   ) {
     return "Приемка";
   }
@@ -90,14 +92,15 @@ function detectCategory(code: string, desc: string, act: string): string {
     text.includes("ричтрак") ||
     text.includes("погрузчик") ||
     text.includes("штабелер") ||
+    text.includes("паллет") ||
     code.startsWith("MOV") ||
-    code.startsWith("PAL")
+    code.startsWith("PAL") ||
+    code.startsWith("LP")
   ) {
     return "Перемещение";
   }
   if (
     text.includes("инвентар") ||
-    text.includes("ревизи") ||
     text.includes("пересчет") ||
     code.startsWith("INV") ||
     code.startsWith("CNT")
@@ -108,34 +111,223 @@ function detectCategory(code: string, desc: string, act: string): string {
     text.includes("брак") ||
     text.includes("дефект") ||
     text.includes("поврежд") ||
-    text.includes("некондиц") ||
     text.includes("карантин") ||
     code.startsWith("DEF") ||
     code.startsWith("DMG")
   ) {
     return "Брак и Проблемы";
   }
-  if (
-    text.includes("возврат") ||
-    text.includes("пвз") ||
-    code.startsWith("RTN") ||
-    code.startsWith("REF")
-  ) {
+  if (text.includes("возврат") || code.startsWith("RTN") || code.startsWith("REF")) {
     return "Возвраты";
   }
   return "Складской процесс";
 }
 
-// Карточка статуса в плоском стиле Cloudflare (белый фон, серая рамка, без теней)
-const StatusCard = React.memo(({ item }: { item: WMSStatusItem }) => {
+// Резервные статусы (на случай потери соединения с таблицей)
+const FALLBACK_STATUSES: WMSStatusItem[] = [
+  {
+    id: "f-1",
+    code: "AIP",
+    category: "Приемка с упаковкой",
+    description:
+      "Приемка товара + доупаковка на столе приемки (пример: красота в слюде доупаковывается в пупырку и короб)",
+  },
+  {
+    id: "f-2",
+    code: "ASP",
+    category: "Упаковка дорогой вещи на приемке",
+    description: "Упаковка дорогой вещи при приемке товара сотрудником склада",
+  },
+  {
+    id: "f-3",
+    code: "LPB",
+    category: "Перемещение паллет",
+    description: "Перемещение МОНОпаллет грузчиком на другое МХ хранения",
+  },
+  {
+    id: "f-4",
+    code: "LPR",
+    category: "Перемещение паллет карщиком",
+    description: "Перемещение МОНОпаллет карщиком на высотные ячейки хранения",
+  },
+  {
+    id: "f-5",
+    code: "PBI",
+    category: "Паллетная приемка",
+    description: "Приемка на воротах Моно паллет по виртуальным ШК",
+  },
+  {
+    id: "f-6",
+    code: "WIJ",
+    category: "Приемка по предраспечатанным ШК",
+    description:
+      "Приемка товара от поставщика FBO на столах сотрудниками через планшет или ТСД и проверка товара",
+  },
+  {
+    id: "f-7",
+    code: "WIW",
+    category: "Приемка сеткой",
+    description:
+      "Первичный статус. Проставляется при выгрузке поступлений от поставщика в контейнерах",
+  },
+  {
+    id: "f-8",
+    code: "WSC",
+    category: "Оприходование при смене характеристики",
+    description:
+      "Виртуальная смена номенклатуры товара на нужную карточку продавца в случае пересорта в поставке",
+  },
+];
+
+// Быстрые подсказки-теги
+const POPULAR_TAGS = ["#AIP", "#ASP", "#LPB", "#WIJ", "Приемка", "Упаковка", "Паллет"];
+
+// --- КАРТОЧКА СТАТУСА ---
+function StatusCard({
+  item,
+  animationIndex = 0,
+}: {
+  item: WMSStatusItem;
+  animationIndex?: number;
+}) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(
-        `#${item.code} - ${item.description}: ${item.action}`
-      );
+      await navigator.clipboard.writeText(`#${item.code} — ${item.category}: ${item.description}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div
+      style={{ animationDelay: `${animationIndex * 50}ms` }}
+      className="animate-fade-in-up group relative bg-slate-900 border border-slate-800 hover:border-slate-700/90 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5"
+    >
+      <div>
+        {/* Верхняя строка: код статуса крупным шрифтом + кнопка копирования */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-mono font-extrabold tracking-wide bg-gradient-to-r from-fuchsia-400 to-orange-400 bg-clip-text text-transparent">
+              #{item.code}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Скопировать регламент"
+            className="p-2 rounded-xl border border-slate-800 bg-slate-800/40 text-slate-400 hover:text-slate-100 hover:bg-slate-800 hover:border-slate-700 transition-colors"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {/* Категория: крупный жирный заголовок */}
+        <h3 className="text-xl font-semibold text-slate-100 mt-4 leading-snug">
+          {item.category}
+        </h3>
+
+        {/* Описание: читаемый текст среднего размера */}
+        <p className="text-base text-slate-400 mt-2 leading-relaxed">
+          {item.description}
+        </p>
+      </div>
+
+      {/* Нижняя декоративная тонкая плашка */}
+      <div className="mt-5 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500 font-mono">
+        <span>WMS Status</span>
+        <span className="group-hover:text-fuchsia-400 transition-colors flex items-center gap-1">
+          Регламент <ArrowRight className="h-3 w-3" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// --- ВКЛАДКА: ИНСТРУМЕНТ "ВЫДЕЛИТЕЛЬ ШК / СТИКЕРА" ---
+function BarcodeHighlighterTool() {
+  const [inputText, setInputText] = useState("");
+  const [delimiter, setDelimiter] = useState<string>("newline");
+  const [removeDuplicates, setRemoveDuplicates] = useState(true);
+  const [onlyNumbers, setOnlyNumbers] = useState(false);
+  const [resultText, setResultText] = useState("");
+  const [stats, setStats] = useState({ total: 0, unique: 0, duplicates: 0 });
+  const [copied, setCopied] = useState(false);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
+  const handleProcess = () => {
+    if (!inputText.trim()) {
+      setResultText("");
+      setStats({ total: 0, unique: 0, duplicates: 0 });
+      setHasProcessed(true);
+      return;
+    }
+
+    const tokens = inputText
+      .split(/[\r\n,;\t|\s]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    const extracted: string[] = [];
+
+    tokens.forEach((token) => {
+      const cleaned = token.replace(/^[«"'({\[]+|[»"')}\].,;:]+$/g, "").trim();
+      if (!cleaned) return;
+
+      if (onlyNumbers) {
+        const numberMatches = cleaned.match(/\b\d{4,24}\b/g);
+        if (numberMatches) {
+          extracted.push(...numberMatches);
+        } else {
+          const digitsOnly = cleaned.replace(/\D/g, "");
+          if (digitsOnly.length >= 4) {
+            extracted.push(digitsOnly);
+          }
+        }
+      } else {
+        if (/^[A-Za-z0-9_\-#]{4,32}$/.test(cleaned) || /\d{6,}/.test(cleaned)) {
+          extracted.push(cleaned);
+        } else {
+          extracted.push(cleaned);
+        }
+      }
+    });
+
+    const totalCount = extracted.length;
+    let finalItems = extracted;
+
+    if (removeDuplicates) {
+      finalItems = Array.from(new Set(extracted));
+    }
+
+    let joinSymbol = "\n";
+    if (delimiter === "comma") joinSymbol = ", ";
+    else if (delimiter === "semicolon") joinSymbol = "; ";
+    else if (delimiter === "space") joinSymbol = " ";
+
+    const formattedOutput = finalItems.join(joinSymbol);
+
+    setResultText(formattedOutput);
+    setStats({
+      total: totalCount,
+      unique: finalItems.length,
+      duplicates: totalCount - finalItems.length,
+    });
+    setHasProcessed(true);
+  };
+
+  const handleCopyResult = async () => {
+    if (!resultText) return;
+    try {
+      await navigator.clipboard.writeText(resultText);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -143,255 +335,108 @@ const StatusCard = React.memo(({ item }: { item: WMSStatusItem }) => {
     }
   };
 
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors flex flex-col justify-between h-full min-h-[148px]">
-      <div>
-        {/* Верхняя строка: #ID и кнопка копирования (слева), Бейдж категории (справа) */}
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-mono font-medium px-2 py-0.5 rounded">
-              #{item.code}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleCopy}
-              title="Скопировать регламент"
-              className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-emerald-600" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </button>
-          </div>
-
-          <span className="bg-gray-100 border border-gray-200 text-gray-600 text-xs font-mono px-2 py-0.5 rounded shrink-0">
-            {item.category}
-          </span>
-        </div>
-
-        {/* Название операции */}
-        <h3 className="text-sm font-medium text-gray-900 mb-1 leading-snug">
-          {item.description}
-        </h3>
-
-        {/* Действия / Регламент */}
-        <p className="text-xs text-gray-600 leading-relaxed font-normal">
-          {item.action}
-        </p>
-      </div>
-    </div>
-  );
-});
-StatusCard.displayName = "StatusCard";
-
-// Конфигурация Virtuoso Grid
-const gridComponents = {
-  List: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-    ({ style, children, ...props }, ref) => (
-      <div
-        ref={ref}
-        {...props}
-        style={style}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-16 w-full"
-      >
-        {children}
-      </div>
-    )
-  ),
-  Item: React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-    ({ children, ...props }, ref) => (
-      <div ref={ref} {...props} className="h-full">
-        {children}
-      </div>
-    )
-  ),
-};
-gridComponents.List.displayName = "VirtuosoGridList";
-gridComponents.Item.displayName = "VirtuosoGridItem";
-
-// --- КОМПОНЕНТ ИНСТРУМЕНТА: ВЫДЕЛИТЕЛЬ ШК / СТИКЕРОВ ---
-function BarcodeSeparatorTool() {
-  const [inputText, setInputText] = useState("");
-  const [delimiter, setDelimiter] = useState<string>("newline");
-  const [customDelimiter, setCustomDelimiter] = useState(",");
-  const [removeDuplicates, setRemoveDuplicates] = useState(true);
-  const [onlyNumbers, setOnlyNumbers] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Обработка текста
-  const processedResult = useMemo(() => {
-    if (!inputText) {
-      return { items: [], text: "", stats: { total: 0, unique: 0, removed: 0 } };
-    }
-
-    // Разбиение по строкам, табуляциям, запятым, точкам с запятой
-    let rawItems = inputText
-      .split(/[\r\n,;\t]+/)
-      .map((item) => item.trim());
-
-    if (onlyNumbers) {
-      rawItems = rawItems
-        .map((item) => item.replace(/\D/g, ""))
-        .filter((item) => item.length > 0);
-    }
-
-    rawItems = rawItems.filter((item) => item.length > 0);
-    const totalCount = rawItems.length;
-
-    let finalItems = rawItems;
-    if (removeDuplicates) {
-      finalItems = Array.from(new Set(rawItems));
-    }
-
-    let joinStr = "\n";
-    if (delimiter === "comma") joinStr = ", ";
-    else if (delimiter === "semicolon") joinStr = "; ";
-    else if (delimiter === "space") joinStr = " ";
-    else if (delimiter === "tab") joinStr = "\t";
-    else if (delimiter === "custom") joinStr = customDelimiter || " ";
-
-    return {
-      items: finalItems,
-      text: finalItems.join(joinStr),
-      stats: {
-        total: totalCount,
-        unique: finalItems.length,
-        removed: totalCount - finalItems.length,
-      },
-    };
-  }, [inputText, delimiter, customDelimiter, removeDuplicates, onlyNumbers]);
-
-  const handleCopy = async () => {
-    if (!processedResult.text) return;
-    try {
-      await navigator.clipboard.writeText(processedResult.text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback
-    }
-  };
-
-  const handleDownload = () => {
-    if (!processedResult.text) return;
-    const blob = new Blob([processedResult.text], { type: "text/plain;charset=utf-8" });
+  const handleDownloadResult = () => {
+    if (!resultText) return;
+    const blob = new Blob([resultText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `barcodes_${Date.now()}.txt`;
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `barcodes_${Date.now()}.txt`;
+    link.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Заголовок модуля */}
+    <div className="space-y-6 max-w-6xl mx-auto pt-4">
+      {/* Заголовок */}
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-mono font-medium px-2 py-0.5 rounded flex items-center gap-1.5">
-            <Barcode className="h-3.5 w-3.5 text-gray-600" />
-            Barcode Tool
+        <div className="flex items-center gap-2 mb-2">
+          <span className="bg-slate-800/80 border border-slate-700/80 text-fuchsia-400 text-xs font-mono px-3 py-1 rounded-xl flex items-center gap-1.5 font-medium">
+            <Barcode className="h-3.5 w-3.5" />
+            WMS Utility
           </span>
-          <span className="text-xs text-gray-500 font-mono">Пакетная обработка</span>
+          <span className="text-xs text-slate-400">Пакетный разбор штрихкодов</span>
         </div>
-        <h1 className="text-xl font-medium text-gray-900">
-          Выделитель ШК / Стикеров
+        <h1 className="text-2xl font-bold text-slate-100">
+          Выделитель ШК / Стикера
         </h1>
-        <p className="text-sm text-gray-600 mt-0.5">
-          Нормализация, фильтрация, дедупликация и объединение штрихкодов из таблиц Excel, 1С и логов WMS.
+        <p className="text-base text-slate-400 mt-1">
+          Быстрое извлечение, нормализация, дедупликация и объединение штрихкодов и стикеров из таблиц Excel, 1С и логов WMS.
         </p>
       </div>
 
-      {/* Панель настроек разделителя и фильтрации */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4">
-        {/* Выбор разделителя */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-gray-500 mr-1">
-            Разделитель:
-          </span>
-          {[
-            { id: "newline", label: "Новая строка (\\n)" },
-            { id: "comma", label: "Запятая (,)" },
-            { id: "semicolon", label: "Точка с запятой (;)" },
-            { id: "space", label: "Пробел" },
-            { id: "custom", label: "Свой" },
-          ].map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => setDelimiter(d.id)}
-              className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-                delimiter === d.id
-                  ? "bg-gray-900 text-white border-gray-900 font-medium"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+      {/* Карточка инструмента */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+        {/* Панель параметров */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-slate-400 mr-1">
+              Разделитель вывода:
+            </span>
+            {[
+              { id: "newline", label: "Новая строка" },
+              { id: "comma", label: "Запятая (,)" },
+              { id: "semicolon", label: "Точка с запятой (;)" },
+              { id: "space", label: "Пробел" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setDelimiter(opt.id)}
+                className={`px-3 py-1.5 text-xs rounded-xl border transition-all ${
+                  delimiter === opt.id
+                    ? "bg-gradient-to-r from-fuchsia-500 to-orange-500 text-white border-transparent font-medium"
+                    : "bg-slate-800/50 text-slate-400 border-slate-700/60 hover:bg-slate-800 hover:text-slate-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-          {delimiter === "custom" && (
-            <input
-              type="text"
-              value={customDelimiter}
-              onChange={(e) => setCustomDelimiter(e.target.value)}
-              placeholder="Символ"
-              className="h-7 w-20 rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          )}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={removeDuplicates}
+                onChange={(e) => setRemoveDuplicates(e.target.checked)}
+                className="rounded-md border-slate-700 bg-slate-800 text-fuchsia-500 focus:ring-0"
+              />
+              Без дубликатов
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyNumbers}
+                onChange={(e) => setOnlyNumbers(e.target.checked)}
+                className="rounded-md border-slate-700 bg-slate-800 text-fuchsia-500 focus:ring-0"
+              />
+              Только цифры
+            </label>
+          </div>
         </div>
 
-        {/* Переключатели */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setRemoveDuplicates(!removeDuplicates)}
-            className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-              removeDuplicates
-                ? "bg-emerald-50 border-emerald-300 text-emerald-800 font-medium"
-                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            {removeDuplicates ? "✓ Без дубликатов" : "С дубликатами"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setOnlyNumbers(!onlyNumbers)}
-            className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
-              onlyNumbers
-                ? "bg-blue-50 border-blue-300 text-blue-800 font-medium"
-                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            {onlyNumbers ? "✓ Только цифры (ШК)" : "Все символы"}
-          </button>
-        </div>
-      </div>
-
-      {/* Две колонки: Входные данные и Результат */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Исходные данные (Input) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-xs font-mono font-medium text-gray-900">
-                  Исходные данные (Raw Input)
-                </span>
-              </div>
+        {/* Сетка: Ввод и Вывод */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Поле ввода */}
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Исходный текст / Лог
+              </label>
               {inputText && (
                 <button
                   type="button"
-                  onClick={() => setInputText("")}
-                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-red-600 transition-colors"
+                  onClick={() => {
+                    setInputText("");
+                    setResultText("");
+                    setHasProcessed(false);
+                  }}
+                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-rose-400 transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  <span>Очистить</span>
+                  Очистить
                 </button>
               )}
             </div>
@@ -399,83 +444,94 @@ function BarcodeSeparatorTool() {
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Вставьте сюда список штрихкодов, стикеров или скопированный столбец из Excel / 1С / WMS..."
-              rows={13}
-              className="mt-3 w-full resize-none rounded-md border border-gray-200 p-3 font-mono text-xs leading-relaxed text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="Вставьте сюда список штрихкодов, стикеров, столбец из Excel или логов WMS..."
+              rows={12}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-fuchsia-500 resize-none leading-relaxed transition-colors"
             />
+
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-mono">
+                Строк: {inputText ? inputText.split("\n").length : 0} | Символов: {inputText.length}
+              </span>
+
+              {/* Кнопка "Обработать" с WB-градиентом */}
+              <button
+                type="button"
+                onClick={handleProcess}
+                className="bg-gradient-to-r from-fuchsia-500 to-orange-500 hover:opacity-90 active:scale-98 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
+              >
+                <Barcode className="h-4 w-4" />
+                Обработать
+              </button>
+            </div>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-mono text-gray-500">
-            <span>Строк: {inputText ? inputText.split("\n").length : 0}</span>
-            <span>Символов: {inputText.length}</span>
-          </div>
-        </div>
+          {/* Блок для вывода результата */}
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                Результат обработки
+              </label>
 
-        {/* Результат обработки (Output) */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-mono font-medium text-gray-900">
-                  Результат (Cleaned Output)
-                </span>
-              </div>
+              {resultText && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadResult}
+                    title="Скачать .TXT"
+                    className="p-1 px-2.5 text-xs bg-slate-800 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-700 flex items-center gap-1 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    TXT
+                  </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={!processedResult.text}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 transition-colors"
-                >
-                  <Download className="h-3 w-3" />
-                  <span>.TXT</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!processedResult.text}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-40 transition-colors"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-3 w-3 text-white" />
-                      <span>Скопировано!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3 w-3 text-white" />
-                      <span>Копировать</span>
-                    </>
-                  )}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyResult}
+                    className="p-1 px-3 text-xs bg-slate-100 text-slate-900 rounded-lg hover:bg-white flex items-center gap-1 transition-colors font-semibold"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        Скопировано
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        Копировать
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             <textarea
               readOnly
-              value={processedResult.text}
-              placeholder="Здесь появятся отформатированные и очищенные штрихкоды..."
-              rows={13}
-              className="mt-3 w-full resize-none rounded-md border border-gray-200 bg-gray-50/50 p-3 font-mono text-xs leading-relaxed text-gray-900 placeholder:text-gray-400 focus:outline-none select-all"
+              value={resultText}
+              placeholder={
+                hasProcessed
+                  ? "Штрихкоды не найдены в исходном тексте."
+                  : "Здесь появится очищенный и отформатированный список после нажатия кнопки «Обработать»..."
+              }
+              rows={12}
+              className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none resize-none leading-relaxed select-all"
             />
-          </div>
 
-          {/* Статистика обработки */}
-          <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-gray-50 p-2.5 text-center border border-gray-200 font-mono text-xs">
-            <div>
-              <span className="text-gray-500">Всего: </span>
-              <span className="font-semibold text-gray-900">{processedResult.stats.total}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Уникальных: </span>
-              <span className="font-semibold text-emerald-600">{processedResult.stats.unique}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Дубликатов: </span>
-              <span className="font-semibold text-blue-600">{processedResult.stats.removed}</span>
+            {/* Статистика обработки */}
+            <div className="mt-4 grid grid-cols-3 gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5 text-center text-xs font-mono">
+              <div>
+                <span className="text-slate-500">Всего: </span>
+                <span className="font-bold text-slate-200">{stats.total}</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Уникальных: </span>
+                <span className="font-bold text-emerald-400">{stats.unique}</span>
+              </div>
+              <div>
+                <span className="text-slate-500">Дубликатов: </span>
+                <span className="font-bold text-fuchsia-400">{stats.duplicates}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -484,393 +540,593 @@ function BarcodeSeparatorTool() {
   );
 }
 
-// --- ОСНОВНОЙ КОМПОНЕНТ APP ---
+// --- ГЛАВНЫЙ КОМПОНЕНТ APP ---
 export default function App() {
-  // Навигация: только 2 вкладки ("home" | "wrench")
-  const [activeTab, setActiveTab] = useState<"home" | "wrench">("home");
+  // Выезжающий сайдбар: скрыт по умолчанию
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Статусы и загрузка
+  // Навигация: только 2 вкладки ("home" | "tools")
+  const [activeTab, setActiveTab] = useState<"home" | "tools">("home");
+
+  // Статусы и загрузка данных
   const [statuses, setStatuses] = useState<WMSStatusItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Поиск
+  // Поиск и пагинация
   const [searchQuery, setSearchQuery] = useState("");
-  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [limit, setLimit] = useState(4);
 
-  // Загрузка данных сразу при входе из жестко заданной константы DEFAULT_SHEETS_CSV_URL
-  const loadGoogleSheetsData = useCallback(async () => {
+  // Стабильный ref на поисковый инпут
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Сброс лимита до 4 при вводе
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setLimit(4);
+  };
+
+  // Загрузка данных через fetch и PapaParse
+  const fetchStatuses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      let response: Response;
+      let csvContent = "";
+
       try {
-        response = await fetch(DEFAULT_SHEETS_CSV_URL);
-      } catch {
-        // Fallback через прокси при блокировке прямых CORS-запросов браузером
-        response = await fetch("/api/statuses");
-      }
-
-      if (!response.ok) {
-        throw new Error(`Ошибка HTTP при загрузке: ${response.status} ${response.statusText}`);
-      }
-
-      const contentType = response.headers.get("content-type") || "";
-      let parsedItems: WMSStatusItem[] = [];
-
-      if (contentType.includes("application/json")) {
-        const json = await response.json();
-        if (Array.isArray(json.statuses)) {
-          parsedItems = json.statuses.map(
-            (
-              s: {
-                id?: string;
-                code?: string;
-                category?: string;
-                description?: string;
-                action?: string;
-              },
-              idx: number
-            ) => ({
-              id: s.id || `wms-${idx}`,
-              code: (s.code || "").replace(/^#/, ""),
-              category:
-                s.category ||
-                detectCategory(s.code || "", s.description || "", s.action || ""),
-              description: s.description || "Без названия",
-              action: s.action || "Регламент отсутствует",
-            })
-          );
+        const response = await fetch(DEFAULT_SHEETS_CSV_URL);
+        if (response.ok) {
+          csvContent = await response.text();
+        } else {
+          throw new Error(`HTTP ${response.status}`);
         }
-      } else {
-        const csvText = await response.text();
-        const parsed = Papa.parse<Record<string, string>>(csvText, {
-          header: true,
-          skipEmptyLines: true,
-        });
+      } catch {
+        // Fallback через серверный роут
+        try {
+          const proxyRes = await fetch("/api/statuses");
+          if (proxyRes.ok) {
+            const data = await proxyRes.json();
+            if (Array.isArray(data.statuses) && data.statuses.length > 0) {
+              setStatuses(
+                data.statuses.map(
+                  (
+                    s: {
+                      code?: string;
+                      category?: string;
+                      description?: string;
+                      action?: string;
+                    },
+                    i: number
+                  ) => ({
+                    id: `proxy-${i}`,
+                    code: (s.code || "").replace(/^#/, "").trim(),
+                    category: s.category || s.description || "Регламент WMS",
+                    description: s.action || s.description || "Описание регламента",
+                  })
+                )
+              );
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch {
+          // fallback
+        }
+      }
 
-        parsedItems = parsed.data
-          .map((row: Record<string, string>, idx: number) => {
-            const code = (
-              row["Статус"] ||
-              row["status"] ||
-              row["Status"] ||
-              row["Код"] ||
-              row["ID"] ||
-              ""
-            ).trim();
+      if (!csvContent) {
+        setStatuses(FALLBACK_STATUSES);
+        setIsLoading(false);
+        return;
+      }
 
-            const description = (
+      const parsed = Papa.parse<Record<string, string>>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+      });
+
+      if (!parsed.data || parsed.data.length === 0) {
+        setStatuses(FALLBACK_STATUSES);
+        setIsLoading(false);
+        return;
+      }
+
+      const items: WMSStatusItem[] = parsed.data
+        .map((row, idx) => {
+          const rawCode = (
+            row["Статус"] ||
+            row["Код"] ||
+            row["Код (статус)"] ||
+            row["Code"] ||
+            row["status"] ||
+            Object.values(row)[0] ||
+            ""
+          ).trim();
+
+          const code = rawCode.replace(/^#/, "");
+          const hasExplicitCategory = Boolean(row["Категория"] || row["Category"]);
+          let category = "";
+          let description = "";
+
+          if (hasExplicitCategory) {
+            category = (row["Категория"] || row["Category"] || "").trim();
+            description = (
               row["Описание"] ||
-              row["description"] ||
               row["Description"] ||
-              row["Наименование"] ||
+              row["Совершаемые действия"] ||
               ""
             ).trim();
-
-            const action = (
+          } else {
+            const col2 = (
+              row["Описание"] ||
+              row["Description"] ||
+              Object.values(row)[1] ||
+              ""
+            ).trim();
+            const col3 = (
               row["Совершаемые действия"] ||
               row["Действия"] ||
-              row["action"] ||
-              row["Action"] ||
-              row["Регламент"] ||
+              Object.values(row)[2] ||
               ""
             ).trim();
 
-            if (!code && !description && !action) return null;
+            if (col2 && col3) {
+              category = col2;
+              description = col3;
+            } else if (col2) {
+              category = detectCategory(code, col2, "");
+              description = col2;
+            } else {
+              category = detectCategory(code, "", "");
+              description = "Описание регламента не указано";
+            }
+          }
 
-            return {
-              id: `sheet-${idx}-${code}`,
-              code: code.replace(/^#/, ""),
-              category: detectCategory(code, description, action),
-              description: description || "Без описания",
-              action: action || "Регламент не указан",
-            };
-          })
-          .filter(Boolean) as WMSStatusItem[];
+          if (!code && !category && !description) return null;
+
+          return {
+            id: `row-${idx}-${code}`,
+            code: code || `ID-${idx + 1}`,
+            category: category || "Регламент WMS",
+            description: description || "Описание процесса",
+          };
+        })
+        .filter(Boolean) as WMSStatusItem[];
+
+      if (items.length > 0) {
+        setStatuses(items);
+      } else {
+        setStatuses(FALLBACK_STATUSES);
       }
-
-      if (parsedItems.length === 0) {
-        throw new Error("В таблице не найдено записей о статусах");
-      }
-
-      setStatuses(parsedItems);
-    } catch (err: unknown) {
-      console.error("Failed to load Google Sheets:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Не удалось загрузить данные из Google Таблицы";
-      setError(message);
+    } catch (err) {
+      console.error("Ошибка загрузки:", err);
+      setError("Не удалось загрузить данные из Google Таблицы. Показаны резервные регламенты.");
+      setStatuses(FALLBACK_STATUSES);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Первичная загрузка без условий
   useEffect(() => {
-    loadGoogleSheetsData();
-  }, [loadGoogleSheetsData]);
+    fetchStatuses();
+  }, [fetchStatuses]);
 
-  // Фильтрация статусов
+  // Флаг активности поиска
+  const isSearchActive = searchQuery.trim().length > 0;
+
+  // ЛОГИКА ПОИСКА:
+  // 1. Если поиск пуст -> список пуст (карточек нет).
+  // 2. Если точное совпадение по Коду (например "AIP" или "#AIP") -> выводим ТОЛЬКО 1 карточку.
+  // 3. Если частичное совпадение -> фильтруем совпадения.
   const filteredStatuses = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return statuses;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
 
+    const qCode = q.replace(/^#/, "");
+
+    // Точное совпадение по Коду
+    const exactCodeMatch = statuses.find(
+      (item) => item.code.toLowerCase().replace(/^#/, "") === qCode
+    );
+
+    if (exactCodeMatch) {
+      return [exactCodeMatch];
+    }
+
+    // Частичное совпадение по слову в описании, категории или коде
     return statuses.filter((item) => {
-      const matchCode = item.code.toLowerCase().includes(q);
-      const matchDesc = item.description.toLowerCase().includes(q);
-      const matchAction = item.action.toLowerCase().includes(q);
-      const matchCat = item.category.toLowerCase().includes(q);
-      return matchCode || matchDesc || matchAction || matchCat;
+      const itemCode = item.code.toLowerCase().replace(/^#/, "");
+      const itemCat = item.category.toLowerCase();
+      const itemDesc = item.description.toLowerCase();
+
+      return (
+        itemCode.includes(qCode) ||
+        itemCat.includes(q) ||
+        itemDesc.includes(q)
+      );
     });
   }, [searchQuery, statuses]);
 
-  // Горячая клавиша '/'
+  // Срез по лимиту (максимум 4 на старте)
+  const displayedStatuses = useMemo(() => {
+    return filteredStatuses.slice(0, limit);
+  }, [filteredStatuses, limit]);
+
+  const hasMore = filteredStatuses.length > limit;
+
+  // Горячая клавиша '/' и Escape
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if (
         e.key === "/" &&
         document.activeElement?.tagName !== "INPUT" &&
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
         e.preventDefault();
-        inputRef.current?.focus();
-      } else if (e.key === "Escape" && document.activeElement === inputRef.current) {
-        setSearchQuery("");
-        inputRef.current?.blur();
+        searchInputRef.current?.focus();
+      } else if (e.key === "Escape") {
+        if (isSidebarOpen) {
+          setIsSidebarOpen(false);
+        } else if (document.activeElement === searchInputRef.current) {
+          handleSearchChange("");
+          searchInputRef.current?.blur();
+        }
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const isSearchActive = searchQuery.trim().length > 0;
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isSidebarOpen]);
 
   return (
-    <div className="flex h-screen w-full bg-white text-gray-900 font-sans antialiased overflow-hidden select-none">
-      {/* 1. ЛЕВЫЙ SIDEBAR В СТИЛЕ CLOUDFLARE (bg-gray-50, border-r border-gray-200) */}
-      <aside className="w-64 h-full flex flex-col justify-between bg-gray-50 border-r border-gray-200 shrink-0 z-20">
+    <div className="flex h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none">
+      {/* 1. ПОЛУПРОЗРАЧНЫЙ BACKDROP ДЛЯ ВЫЕЗЖАЮЩЕГО САЙДБАРА */}
+      <div
+        onClick={() => setIsSidebarOpen(false)}
+        className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
+          isSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
+
+      {/* 2. ВЫЕЗЖАЮЩИЙ САЙДБАР (Off-canvas) - скрыт за левым краем (-translate-x-full) */}
+      <aside
+        className={`fixed top-0 left-0 bottom-0 w-72 z-50 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-out ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div>
-          {/* Логотип Cloudflare + WMS Stats */}
-          <div className="h-14 px-5 flex items-center gap-2.5 border-b border-gray-200 bg-white">
-            <div className="w-6 h-6 rounded bg-[#f38020] text-white flex items-center justify-center shrink-0">
-              <Cloud className="h-3.5 w-3.5 fill-white" />
+          {/* Шапка меню */}
+          <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              {/* Фирменная иконка с градиентом fuchsia to orange */}
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-fuchsia-500 to-orange-500 flex items-center justify-center text-white font-black text-sm shrink-0">
+                W
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-base font-bold text-slate-100 truncate leading-none">
+                  WMS Dashboard
+                </span>
+                <span className="text-xs text-slate-400 truncate mt-1">
+                  База регламентов
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-gray-900 truncate leading-none">
-                WMS Stats
-              </span>
-              <span className="text-[11px] text-gray-500 truncate mt-0.5">
-                Cloudflare Console
-              </span>
-            </div>
+
+            {/* Кнопка закрытия сайдбара */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(false)}
+              className="p-1.5 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+              title="Закрыть меню"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          {/* Меню с текстовыми пунктами и маленькими серыми иконками */}
-          <div className="p-3 space-y-1">
-            <div className="px-3 pt-2 pb-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+          {/* Пункты меню: ДВЕ вкладки ("База статусов" и "Инструменты") */}
+          <nav className="p-4 space-y-1.5">
+            <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
               Навигация
             </div>
 
-            {/* Вкладка: База статусов (Home) */}
+            {/* Вкладка 1: База статусов */}
             <button
               type="button"
-              onClick={() => setActiveTab("home")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-colors ${
+              onClick={() => {
+                setActiveTab("home");
+                setIsSidebarOpen(false);
+              }}
+              className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 text-sm rounded-xl transition-all ${
                 activeTab === "home"
-                  ? "bg-gray-200 text-gray-900 font-medium"
-                  : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
+                  ? "bg-slate-800 text-slate-100 font-semibold"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
-              <Home className="h-4 w-4 shrink-0 text-gray-500" />
+              {/* Градиентный индикатор активной вкладки */}
+              {activeTab === "home" && (
+                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-gradient-to-b from-fuchsia-500 to-orange-500" />
+              )}
+              <Home className={`h-4 w-4 shrink-0 ${activeTab === "home" ? "text-fuchsia-400" : "text-slate-500"}`} />
               <span>База статусов</span>
             </button>
 
-            {/* Вкладка: Инструменты (Wrench) */}
+            {/* Вкладка 2: Инструменты */}
             <button
               type="button"
-              onClick={() => setActiveTab("wrench")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-colors ${
-                activeTab === "wrench"
-                  ? "bg-gray-200 text-gray-900 font-medium"
-                  : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
+              onClick={() => {
+                setActiveTab("tools");
+                setIsSidebarOpen(false);
+              }}
+              className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 text-sm rounded-xl transition-all ${
+                activeTab === "tools"
+                  ? "bg-slate-800 text-slate-100 font-semibold"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
-              <Wrench className="h-4 w-4 shrink-0 text-gray-500" />
+              {activeTab === "tools" && (
+                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-gradient-to-b from-fuchsia-500 to-orange-500" />
+              )}
+              <Wrench className={`h-4 w-4 shrink-0 ${activeTab === "tools" ? "text-fuchsia-400" : "text-slate-500"}`} />
               <span>Инструменты</span>
             </button>
-          </div>
+          </nav>
         </div>
 
-        {/* Нижний статус-бар сайдбара */}
-        <div className="p-3 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between px-2 py-1 text-xs text-gray-500 font-mono">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="text-[11px] text-gray-700 font-sans font-medium">Workers: Active</span>
+        {/* Футер сайдбара */}
+        <div className="p-4 border-t border-slate-800 bg-slate-900/60">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Синхронизировано</span>
             </div>
-            <span className="text-[10px] text-gray-400">v1.0.0</span>
+            <span className="font-mono text-slate-500">{statuses.length} статусов</span>
           </div>
         </div>
       </aside>
 
-      {/* 2. ГЛАВНАЯ ОБЛАСТЬ (100% ПЛОСКИЙ СВЕТЛЫЙ ДИЗАЙН) */}
-      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden bg-white">
-        {/* ВЕРХНЯЯ ШАПКА (HEADER): bg-white, border-b border-gray-200 */}
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0">
-          {/* Хлебные крошки */}
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span className="hover:text-gray-900 cursor-pointer">База знаний</span>
-            <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
-            <span className="text-gray-900 font-medium">
-              {activeTab === "home" ? "Регламенты WMS" : "Выделитель ШК / Стикеров"}
-            </span>
+      {/* 3. ОСНОВНАЯ ЧАСТЬ ЭКРАНА */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden bg-slate-950">
+        {/* ШАПКА (Header) */}
+        <header className="h-16 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between shrink-0 z-10">
+          {/* Слева: кнопка "Бургер" и текстовый заголовок */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 rounded-xl border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Открыть меню"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-fuchsia-500 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                W
+              </div>
+              <span className="text-sm sm:text-base font-semibold text-slate-100">
+                База знаний / Регламенты WMS
+              </span>
+            </div>
           </div>
 
-          {/* Правая часть: статус синхронизации и обновление */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="hidden sm:inline">Синхронизировано</span>
-            </div>
-
+          {/* Справа: кнопка обновления данных */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => loadGoogleSheetsData()}
-              title="Обновить таблицу"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              onClick={() => fetchStatuses()}
+              title="Обновить таблицу из Google Sheets"
+              className="p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-100 hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
-              <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin text-[#f38020]" : ""}`} />
-              <span className="hidden sm:inline">Обновить</span>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin text-fuchsia-400" : ""}`} />
             </button>
           </div>
         </header>
 
-        {/* ОСНОВНОЙ КОНТЕНТ (СКРОЛЛИРУЕМЫЙ) */}
-        <main
-          ref={setScrollParent}
-          className="flex-1 overflow-y-auto w-full bg-white p-6 md:p-8"
-        >
-          {/* ВКЛАДКА 1: ИНСТРУМЕНТЫ — ПОЛНОСТЬЮ РАБОЧИЙ ВЫДЕЛИТЕЛЬ ШК / СТИКЕРОВ */}
-          {activeTab === "wrench" && <BarcodeSeparatorTool />}
+        {/* ГЛАВНАЯ СКРОЛЛИРУЕМАЯ ОБЛАСТЬ */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-950">
+          {/* ВКЛАДКА: ИНСТРУМЕНТЫ */}
+          {activeTab === "tools" && <BarcodeHighlighterTool />}
 
-          {/* ВКЛАДКА 2: БАЗА СТАТУСОВ (HOME) */}
+          {/* ВКЛАДКА: БАЗА СТАТУСОВ (ДИНАМИЧЕСКИЙ ЛЕЙАУТ БЕЗ ПЕРЕМОНТИРОВАНИЯ ИНПУТА) */}
           {activeTab === "home" && (
-            <div className="max-w-6xl mx-auto space-y-6">
-              {/* Заголовок страницы */}
-              <div>
-                <h1 className="text-xl font-medium text-gray-900">
-                  Регламенты и статусы WMS
-                </h1>
-                <p className="text-sm text-gray-600 mt-0.5">
-                  Справочник складских процессов и регламентов выполнения операций.
-                </p>
-              </div>
-
-              {/* Поиск: белый инпут, серая рамка border-gray-300, выравнивание по левому краю */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="relative flex items-center bg-white border border-gray-300 rounded-md px-3 py-2 max-w-md w-full focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                  <Search className="h-4 w-4 text-gray-400 mr-2 shrink-0" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Поиск по коду статуса или описанию..."
-                    className="w-full bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
-                  />
-
-                  {isSearchActive ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery("");
-                        inputRef.current?.focus();
-                      }}
-                      className="p-0.5 rounded text-gray-400 hover:text-gray-700 transition-colors shrink-0"
-                      title="Очистить"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <kbd className="hidden sm:inline-flex items-center justify-center bg-gray-100 text-gray-500 rounded px-1.5 py-0.5 text-[10px] font-mono border border-gray-200 shrink-0 select-none">
-                      /
-                    </kbd>
-                  )}
-                </div>
-
-                {/* Счетчик записей и сброс */}
-                <div className="flex items-center gap-3 text-xs text-gray-500">
-                  <span>
-                    Показано:{" "}
-                    <b className="text-gray-900 font-mono">{filteredStatuses.length}</b> из{" "}
-                    <span className="font-mono">{statuses.length}</span>
-                  </span>
-
-                  {isSearchActive && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      <span>Сбросить</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
+            <div className="w-full">
               {/* Баннер ошибки при сбое загрузки */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3.5 flex items-center justify-between text-xs text-red-700">
+                <div className="max-w-4xl mx-auto mb-6 bg-rose-950/40 border border-rose-900/60 rounded-xl p-3.5 flex items-center justify-between text-xs text-rose-300">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+                    <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
                     <span>{error}</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => loadGoogleSheetsData()}
-                    className="underline hover:text-red-900 shrink-0 ml-3 font-medium"
+                    onClick={() => fetchStatuses()}
+                    className="underline font-medium hover:text-rose-100 ml-2"
                   >
                     Повторить
                   </button>
                 </div>
               )}
 
-              {/* Виртуализированный список карточек (VirtuosoGrid) */}
-              {filteredStatuses.length > 0 ? (
-                <div className="w-full">
-                  <VirtuosoGrid
-                    customScrollParent={scrollParent || undefined}
-                    data={filteredStatuses}
-                    totalCount={filteredStatuses.length}
-                    overscan={200}
-                    components={gridComponents}
-                    itemContent={(_idx, item) => <StatusCard key={item.id} item={item} />}
-                  />
-                </div>
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="w-10 h-10 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto mb-3 text-gray-400">
-                    <Search className="h-5 w-5" />
+              {/* 
+                СТАБИЛЬНЫЙ КОНТЕЙНЕР ПОИСКА:
+                Один постоянный инпут в дереве React!
+                Плавный transition на отступах и ширине:
+                - Когда поиск пуст: центрирован посередине экрана (pt-24 sm:pt-32 pb-8 max-w-2xl)
+                - Когда введен текст: плавно смещается в верхнюю часть экрана (pt-2 pb-6 max-w-6xl)
+              */}
+              <div
+                className={`mx-auto transition-all duration-300 ease-out ${
+                  isSearchActive
+                    ? "pt-2 pb-6 max-w-6xl"
+                    : "pt-20 sm:pt-28 pb-8 max-w-2xl text-center"
+                }`}
+              >
+                {/* Брендовый заголовок в начальном состоянии (плавно скрывается/схлопывается) */}
+                <div
+                  className={`transition-all duration-300 overflow-hidden ${
+                    isSearchActive ? "max-h-0 opacity-0 pointer-events-none mb-0" : "max-h-60 opacity-100 mb-6"
+                  }`}
+                >
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-800 bg-slate-900/80 text-xs text-slate-300 mb-4">
+                    <Sparkles className="h-3.5 w-3.5 text-fuchsia-400" />
+                    <span className="font-medium">Корпоративная база регламентов</span>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-900">
-                    Ничего не найдено
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                    По запросу &laquo;{searchQuery}&raquo; записи отсутствуют. Проверьте правильность написания кода.
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
+                    Поиск по статусам WMS
+                  </h1>
+                </div>
+
+                {/* 
+                  СТРОКА ПОИСКА:
+                  rounded-2xl, градиентный hover/focus glow, стабильный инпут!
+                */}
+                <div className="relative group">
+                  {/* Градиентная подложка-рамка (active glow) */}
+                  <div className="absolute -inset-[1px] bg-gradient-to-r from-fuchsia-500/20 via-slate-800 to-orange-500/20 rounded-2xl group-hover:from-fuchsia-500/40 group-hover:to-orange-500/40 group-focus-within:from-fuchsia-500 group-focus-within:to-orange-500 transition-all duration-300" />
+
+                  {/* Внутренняя область строки поиска */}
+                  <div className="relative flex items-center bg-slate-900 rounded-2xl px-5 py-4 border border-slate-800/80 group-focus-within:border-transparent transition-colors">
+                    <Search className="h-5 w-5 text-slate-400 mr-3.5 shrink-0 group-focus-within:text-fuchsia-400 transition-colors" />
+
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Введите код (например #AIP) или название операции..."
+                      className="w-full bg-transparent text-base sm:text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                    />
+
+                    {searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSearchChange("");
+                          searchInputRef.current?.focus();
+                        }}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors shrink-0"
+                        title="Очистить поиск"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <kbd className="hidden sm:inline-flex items-center justify-center bg-slate-800 text-slate-400 rounded-lg px-2.5 py-1 text-xs font-mono border border-slate-700/80 shrink-0 select-none">
+                        /
+                      </kbd>
+                    )}
+                  </div>
+                </div>
+
+                {/* Аккуратная подсказка под строкой поиска в начальном состоянии */}
+                <div
+                  className={`transition-all duration-300 overflow-hidden ${
+                    isSearchActive ? "max-h-0 opacity-0 pointer-events-none mt-0" : "max-h-32 opacity-100 mt-4"
+                  }`}
+                >
+                  <p className="text-sm text-slate-400">
+                    Введите код или название операции...
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="mt-4 px-3 py-1.5 rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-xs font-medium text-gray-700 transition-colors"
-                  >
-                    Сбросить фильтр
-                  </button>
+
+                  {/* Быстрые кликабельные теги */}
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <span className="text-xs text-slate-500 mr-1">
+                      Популярные:
+                    </span>
+                    {POPULAR_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          handleSearchChange(tag);
+                          searchInputRef.current?.focus();
+                        }}
+                        className="px-3 py-1 text-xs rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-100 hover:border-slate-700 hover:bg-slate-800/80 transition-all font-mono"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Строка со счетчиком найденного при активном поиске */}
+                {isSearchActive && (
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400 px-1">
+                    <span>
+                      Результатов:{" "}
+                      <b className="text-slate-100 font-mono text-sm">
+                        {filteredStatuses.length}
+                      </b>{" "}
+                      из {statuses.length}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSearchChange("")}
+                      className="text-xs text-fuchsia-400 hover:text-fuchsia-300 transition-colors"
+                    >
+                      Сбросить поиск
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 
+                РЕЗУЛЬТАТЫ ПОИСКА:
+                Отображаются ТОЛЬКО если введен текст (isSearchActive).
+                Сетка: grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6.
+                Карточки плавно выезжают снизу вверх.
+              */}
+              {isSearchActive && (
+                <div className="max-w-6xl mx-auto space-y-8">
+                  {displayedStatuses.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {displayedStatuses.map((item, idx) => (
+                          <StatusCard key={item.id} item={item} animationIndex={idx} />
+                        ))}
+                      </div>
+
+                      {/* Кнопка "Показать еще (+4)" с градиентным бордером */}
+                      {hasMore && (
+                        <div className="flex justify-center pt-4 pb-12">
+                          <button
+                            type="button"
+                            onClick={() => setLimit((prev) => prev + 4)}
+                            className="group relative p-[1px] rounded-2xl bg-gradient-to-r from-fuchsia-500 to-orange-500 hover:opacity-95 active:scale-98 transition-all"
+                          >
+                            <div className="px-6 py-3 rounded-[15px] bg-slate-900 text-slate-200 group-hover:bg-slate-900/80 transition-colors flex items-center gap-2.5 text-sm font-semibold">
+                              <Layers className="h-4 w-4 text-fuchsia-400" />
+                              <span>Показать еще (+4)</span>
+                              <span className="text-xs text-slate-500 font-normal">
+                                (осталось {filteredStatuses.length - limit})
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Ничего не найдено */
+                    <div className="animate-fade-in-up bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto mt-6">
+                      <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-4 text-slate-400">
+                        <Search className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-100">
+                        Ничего не найдено
+                      </h3>
+                      <p className="text-sm text-slate-400 mt-2">
+                        По запросу &laquo;{searchQuery}&raquo; совпадений не обнаружено. Проверьте правильность кода (например, AIP) или введите другое слово.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleSearchChange("")}
+                        className="mt-5 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+                      >
+                        Очистить поиск
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

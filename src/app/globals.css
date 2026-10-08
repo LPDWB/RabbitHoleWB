@@ -4,54 +4,12 @@
 
 @layer base {
   :root {
-    --background: 260 28% 6%;
-    --foreground: 270 20% 98%;
-    --card: 260 24% 9%;
-    --card-foreground: 270 20% 98%;
-    --popover: 260 24% 8%;
-    --popover-foreground: 270 20% 98%;
-    --primary: 295 85% 62%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 260 20% 14%;
-    --secondary-foreground: 270 20% 98%;
-    --muted: 260 20% 14%;
-    --muted-foreground: 260 12% 65%;
-    --accent: 275 85% 65%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 345 85% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 260 20% 18%;
-    --input: 260 20% 18%;
-    --ring: 295 85% 62%;
-    --radius: 1rem;
+    --background: 222 47% 3%;
+    --foreground: 210 40% 98%;
   }
 
-  .dark {
-    --background: 260 28% 6%;
-    --foreground: 270 20% 98%;
-    --card: 260 24% 9%;
-    --card-foreground: 270 20% 98%;
-    --popover: 260 24% 8%;
-    --popover-foreground: 270 20% 98%;
-    --primary: 295 85% 62%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 260 20% 14%;
-    --secondary-foreground: 270 20% 98%;
-    --muted: 260 20% 14%;
-    --muted-foreground: 260 12% 65%;
-    --accent: 275 85% 65%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 345 85% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 260 20% 18%;
-    --input: 260 20% 18%;
-    --ring: 295 85% 62%;
-  }
-}
-
-@layer base {
   * {
-    @apply border-border;
+    border-color: #1e293b;
   }
 
   html {
@@ -60,70 +18,42 @@
   }
 
   body {
-    @apply bg-[#0e0c15] text-foreground antialiased selection:bg-fuchsia-500/30 selection:text-fuchsia-200;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: #0e0c15;
-    background-image:
-      radial-gradient(circle at 50% -15%, rgba(217, 70, 239, 0.12), transparent 50%),
-      radial-gradient(circle at 85% 15%, rgba(147, 51, 234, 0.08), transparent 40%),
-      radial-gradient(circle at 15% 65%, rgba(236, 72, 153, 0.06), transparent 45%);
-    background-attachment: fixed;
+    background-color: #020617;
+    color: #f8fafc;
     min-height: 100vh;
   }
 }
 
-/* Glassmorphism & Dark Neon Custom Utilities */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.animate-fade-in-up {
+  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.glass-panel-hover:hover {
-  background: rgba(255, 255, 255, 0.055);
-  border-color: rgba(217, 70, 239, 0.35);
-  box-shadow: 0 0 25px rgba(217, 70, 239, 0.12);
-}
-
-.neon-text-gradient {
-  background: linear-gradient(135deg, #f0abfc 0%, #e879f9 40%, #c084fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.neon-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-}
-
-.neon-btn:hover {
-  background: linear-gradient(135deg, #c026d3 0%, #7c3aed 100%);
-  border-color: rgba(232, 121, 249, 0.6);
-  color: #ffffff;
-  box-shadow: 0 0 20px rgba(192, 38, 211, 0.35);
-}
-
-/* Custom Scrollbar for High-Tech Feel */
+/* Custom sleek scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0e0c15;
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  background: #1e293b;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(217, 70, 239, 0.3);
+  background: #334155;
 }

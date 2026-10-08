@@ -1,6 +1,6 @@
 {
-  "name": "Google Antigravity // WMS Intelligence Console",
-  "description": "Dynamic zero-gravity status lookup, quantum barcode & sticker parser, and warehouse intelligence system inspired by Google Antigravity.",
+  "name": "WMS Регламенты // Корпоративный дашборд",
+  "description": "Корпоративный дашборд для регламентов WMS, базы статусов и инструментов складской логистики в строгой светлой теме Cloudflare.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
